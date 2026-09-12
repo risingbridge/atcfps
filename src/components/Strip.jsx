@@ -1,5 +1,5 @@
 import { STRIP_TYPES } from '../lib/stripTypes.js'
-import { formatZulu } from '../lib/time.js'
+import { ageClass, formatMinutes, formatZulu, minutesSince } from '../lib/time.js'
 
 function FlightBody({ strip }) {
   return (
@@ -33,13 +33,14 @@ function QuickBody({ strip, def }) {
   )
 }
 
-export default function Strip({ strip, onClick, onDelete, innerRef, style, className = '', dragProps }) {
+export default function Strip({ strip, now, onClick, onDelete, innerRef, style, className = '', dragProps }) {
   const def = STRIP_TYPES[strip.type]
   const merged = strip.colorOverride ? { ...style, '--strip-accent': strip.colorOverride } : style
+  const minutes = now != null ? minutesSince(strip.lastMovedAt, now) : null
   return (
     <div
       ref={innerRef}
-      className={`strip ${className}`}
+      className={`strip ${className} ${minutes != null ? ageClass(minutes) : ''}`}
       data-type={strip.type}
       style={merged}
       onClick={onClick}
@@ -51,6 +52,11 @@ export default function Strip({ strip, onClick, onDelete, innerRef, style, class
       <div className="strip-body">
         {strip.type === 'flight' ? <FlightBody strip={strip} /> : <QuickBody strip={strip} def={def} />}
       </div>
+      {minutes != null && (
+        <span className="strip-age" title={`${formatMinutes(minutes)} in this bay`}>
+          {formatMinutes(minutes)}
+        </span>
+      )}
       {onDelete && (
         <button
           className="strip-delete"

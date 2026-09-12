@@ -9,7 +9,7 @@ import NewStripMenu from './NewStripMenu.jsx'
 import SortableStrip from './SortableStrip.jsx'
 import StripEditor from './StripEditor.jsx'
 
-export default function BayColumn({ bay, index, count }) {
+export default function BayColumn({ bay, index, count, now }) {
   const { board, dispatch } = useActiveBoard()
   const { setNodeRef, isOver } = useDroppable({ id: bay.id, data: { type: 'bay' } })
   const { deleteStrip, deleteBay } = useDeleteWithUndo()
@@ -48,6 +48,7 @@ export default function BayColumn({ bay, index, count }) {
             <SortableStrip
               key={id}
               strip={board.strips[id]}
+              now={now}
               bayId={bay.id}
               onClick={() => setEditingId(id)}
               onDelete={() => deleteStrip(id)}

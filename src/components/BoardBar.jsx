@@ -2,12 +2,13 @@ import { actions } from '../state/store.js'
 import { useStore } from '../state/storeContext.js'
 import BoardMenu from './BoardMenu.jsx'
 import WakeLockToggle from './WakeLockToggle.jsx'
+import ZuluClock from './ZuluClock.jsx'
 
 export default function BoardBar() {
   const { state, dispatch } = useStore()
   return (
     <header className="board-bar">
-      <span className="board-bar-brand">STRIP BOARD</span>
+      <ZuluClock />
       <div className="board-bar-boards">
         <select
           className="board-select"

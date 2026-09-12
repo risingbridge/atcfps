@@ -19,10 +19,27 @@
   flex-shrink: 0;
 }
 
-.board-bar-brand {
+.zulu-clock {
   font-family: var(--font-data);
-  font-size: 12px;
-  letter-spacing: 0.08em;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--chrome-text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.zulu-clock-sec {
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--chrome-text-muted);
+}
+
+.zulu-clock-z {
+  margin-left: 4px;
+  font-size: 14px;
+  font-weight: 400;
   color: var(--chrome-text-muted);
 }
 
@@ -1166,7 +1183,6 @@ textarea.input {
     background: #fff;
   }
 
-  .board-bar-brand,
   .board-select,
   .board-bar .btn,
   .board-bar .menu,

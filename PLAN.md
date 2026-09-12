@@ -52,8 +52,8 @@ Defaults I'll use unless told otherwise:
 
 ---
 
-> **Status (2026-09-12):** All phases (0–4) built. Remaining: real-iPad
-> verification of the wake lock and touch drag on the Pages URL.
+> **Status (2026-09-12):** All phases (0–4) built, deployed, and verified on
+> the iPad (wake lock across app switches, long-press drag vs. scroll).
 
 ## Phase 0 — Scaffold ✅
 
@@ -196,7 +196,7 @@ empty bay, and cancel with Esc all behave, on both mouse and iPad.
 **Done when:** every field of every strip type can be changed after
 creation, and nothing destructive happens without a confirm.
 
-## Phase 3 — Wake lock & iPad deployment ✅ (iPad check pending)
+## Phase 3 — Wake lock & iPad deployment ✅
 
 1. `src/hooks/useWakeLock.js`:
    ```

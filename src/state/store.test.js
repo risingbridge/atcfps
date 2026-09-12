@@ -1,0 +1,245 @@
+import { describe, expect, it } from 'vitest'
+import { actions as A, initialState, reducer, shiftInOrder } from './store.js'
+
+const T0 = '2026-09-12T10:00:00.000Z'
+const T1 = '2026-09-12T10:05:00.000Z'
+
+function run(state, ...acts) {
+  return acts.reduce(reducer, state)
+}
+
+/** A board "b" with bays "x" (strips s1, s2, s3), "y" (strip s4), "z" (empty). */
+function fixture() {
+  return run(
+    initialState({ boardId: 'b' }),
+    A.addBay('b', 'X', 'x'),
+    A.addBay('b', 'Y', 'y'),
+    A.addBay('b', 'Z', 'z'),
+    A.createFlightStrip('b', 'x', { callsign: 'SAS1' }, 's1', T0),
+    A.createFlightStrip('b', 'x', { callsign: 'SAS2' }, 's2', T0),
+    A.createQuickStrip('b', 'x', 'info', 'Turb FL300', 's3', T0),
+    A.createQuickStrip('b', 'y', 'vehicle', 'Follow-me 2', 's4', T0),
+  )
+}
+
+/** Every strip ID appears in exactly one bay, and that bay matches currentBayId. */
+function assertInvariants(board) {
+  const seen = new Map()
+  for (const bayId of board.bayOrder) {
+    expect(board.bays[bayId]).toBeDefined()
+    for (const id of board.bays[bayId].stripOrder) {
+      expect(seen.has(id)).toBe(false)
+      seen.set(id, bayId)
+    }
+  }
+  expect(Object.keys(board.bays).sort()).toEqual([...board.bayOrder].sort())
+  expect([...seen.keys()].sort()).toEqual(Object.keys(board.strips).sort())
+  for (const [id, bayId] of seen) expect(board.strips[id].currentBayId).toBe(bayId)
+}
+
+describe('boards', () => {
+  it('starts with one empty active board', () => {
+    const s = initialState({ boardId: 'b' })
+    expect(s.boardOrder).toEqual(['b'])
+    expect(s.activeBoardId).toBe('b')
+    expect(s.boards.b.bayOrder).toEqual([])
+  })
+
+  it('creates a board, empty, and makes it active', () => {
+    const s = run(initialState({ boardId: 'b' }), A.createBoard('Tower', 'b2'))
+    expect(s.boardOrder).toEqual(['b', 'b2'])
+    expect(s.activeBoardId).toBe('b2')
+    expect(s.boards.b2).toMatchObject({ name: 'Tower', bayOrder: [], bays: {}, strips: {} })
+  })
+
+  it('renames a board, ignoring blank names', () => {
+    let s = run(initialState({ boardId: 'b' }), A.renameBoard('b', '  Approach '))
+    expect(s.boards.b.name).toBe('Approach')
+    const before = s
+    s = run(s, A.renameBoard('b', '   '))
+    expect(s).toBe(before)
+  })
+
+  it('setActiveBoard ignores unknown ids', () => {
+    const s = initialState({ boardId: 'b' })
+    expect(run(s, A.setActiveBoard('nope'))).toBe(s)
+  })
+
+  it('deleting the active board activates the previous one', () => {
+    let s = run(initialState({ boardId: 'b' }), A.createBoard('B2', 'b2'), A.createBoard('B3', 'b3'))
+    s = run(s, A.deleteBoard('b3', 'r'))
+    expect(s.boardOrder).toEqual(['b', 'b2'])
+    expect(s.activeBoardId).toBe('b2')
+    s = run(s, A.deleteBoard('b', 'r'))
+    expect(s.activeBoardId).toBe('b2')
+  })
+
+  it('deleting a non-active board keeps the active one', () => {
+    let s = run(initialState({ boardId: 'b' }), A.createBoard('B2', 'b2'), A.setActiveBoard('b'))
+    s = run(s, A.deleteBoard('b2', 'r'))
+    expect(s.activeBoardId).toBe('b')
+    expect(s.boards.r).toBeUndefined()
+  })
+
+  it('deleting the last board replaces it with a fresh empty one', () => {
+    const s = run(fixture(), A.deleteBoard('b', 'r'))
+    expect(s.boardOrder).toEqual(['r'])
+    expect(s.activeBoardId).toBe('r')
+    expect(s.boards.r.bayOrder).toEqual([])
+  })
+})
+
+describe('bays', () => {
+  it('adds bays in order with default names when blank', () => {
+    const s = run(initialState({ boardId: 'b' }), A.addBay('b', 'Arrivals', 'x'), A.addBay('b', '', 'y'))
+    expect(s.boards.b.bayOrder).toEqual(['x', 'y'])
+    expect(s.boards.b.bays.y.name).toBe('Bay 2')
+  })
+
+  it('renames and colours a bay', () => {
+    let s = run(fixture(), A.renameBay('b', 'x', 'Departures'), A.setBayColor('b', 'x', '#abc'))
+    expect(s.boards.b.bays.x).toMatchObject({ name: 'Departures', color: '#abc' })
+    s = run(s, A.setBayColor('b', 'x', null))
+    expect('color' in s.boards.b.bays.x).toBe(false)
+  })
+
+  it('reorders bays only with a valid permutation', () => {
+    const s0 = fixture()
+    const s = run(s0, A.reorderBays('b', ['z', 'x', 'y']))
+    expect(s.boards.b.bayOrder).toEqual(['z', 'x', 'y'])
+    expect(run(s0, A.reorderBays('b', ['z', 'x']))).toBe(s0)
+    expect(run(s0, A.reorderBays('b', ['z', 'x', 'x']))).toBe(s0)
+    expect(run(s0, A.reorderBays('b', ['z', 'x', 'q']))).toBe(s0)
+  })
+
+  it('shiftInOrder moves an id and clamps at the ends', () => {
+    expect(shiftInOrder(['a', 'b', 'c'], 'a', 1)).toEqual(['b', 'a', 'c'])
+    expect(shiftInOrder(['a', 'b', 'c'], 'c', 1)).toEqual(['a', 'b', 'c'])
+    expect(shiftInOrder(['a', 'b', 'c'], 'c', -5)).toEqual(['c', 'a', 'b'])
+  })
+
+  it('deleting a bay cascades to its strips', () => {
+    const s = run(fixture(), A.deleteBay('b', 'x'))
+    const board = s.boards.b
+    expect(board.bayOrder).toEqual(['y', 'z'])
+    expect(Object.keys(board.strips)).toEqual(['s4'])
+    assertInvariants(board)
+  })
+})
+
+describe('strip creation', () => {
+  it('creates a flight strip with only known fields', () => {
+    const s = run(
+      initialState({ boardId: 'b' }),
+      A.addBay('b', 'X', 'x'),
+      A.createFlightStrip('b', 'x', { callsign: 'NAX22', squawk: '4711', bogus: 'no' }, 's', T0),
+    )
+    const strip = s.boards.b.strips.s
+    expect(strip).toEqual({
+      id: 's', type: 'flight', currentBayId: 'x', createdAt: T0, lastMovedAt: T0,
+      callsign: 'NAX22', aircraftType: '', route: '', requestedAltitude: '', clearedAltitude: '',
+      squawk: '4711', remarks: '',
+    })
+    expect(s.boards.b.bays.x.stripOrder).toEqual(['s'])
+  })
+
+  it('creates info and vehicle strips from a quick value', () => {
+    const b = fixture().boards.b
+    expect(b.strips.s3).toMatchObject({ type: 'info', message: 'Turb FL300', notes: '' })
+    expect(b.strips.s4).toMatchObject({ type: 'vehicle', vehicleId: 'Follow-me 2', notes: '' })
+    expect(b.bays.x.stripOrder).toEqual(['s1', 's2', 's3'])
+    assertInvariants(b)
+  })
+
+  it('ignores blank quick values and non-quick types', () => {
+    const s0 = fixture()
+    expect(run(s0, A.createQuickStrip('b', 'x', 'info', '   ', 'n'))).toBe(s0)
+    expect(run(s0, A.createQuickStrip('b', 'x', 'flight', 'SAS1', 'n'))).toBe(s0)
+  })
+
+  it('ignores creation into a missing bay', () => {
+    const s0 = fixture()
+    expect(run(s0, A.createFlightStrip('b', 'nope', { callsign: 'X' }, 'n'))).toBe(s0)
+  })
+})
+
+describe('strip edit / delete', () => {
+  it('merges a patch but protects structural fields', () => {
+    const s = run(fixture(), A.updateStrip('b', 's3', { notes: 'hi', colorOverride: '#f00', currentBayId: 'z', type: 'flight' }))
+    expect(s.boards.b.strips.s3).toMatchObject({ notes: 'hi', colorOverride: '#f00', currentBayId: 'x', type: 'info' })
+  })
+
+  it('deletes a strip from its bay', () => {
+    const s = run(fixture(), A.deleteStrip('b', 's2'))
+    expect(s.boards.b.bays.x.stripOrder).toEqual(['s1', 's3'])
+    expect(s.boards.b.strips.s2).toBeUndefined()
+    assertInvariants(s.boards.b)
+  })
+})
+
+describe('moveStrip', () => {
+  it('reorders within a bay, downwards', () => {
+    const s = run(fixture(), A.moveStrip('b', 's1', 'x', 2))
+    expect(s.boards.b.bays.x.stripOrder).toEqual(['s2', 's3', 's1'])
+    assertInvariants(s.boards.b)
+  })
+
+  it('reorders within a bay, upwards', () => {
+    const s = run(fixture(), A.moveStrip('b', 's3', 'x', 0))
+    expect(s.boards.b.bays.x.stripOrder).toEqual(['s3', 's1', 's2'])
+  })
+
+  it('is a no-op when nothing changes', () => {
+    const s0 = fixture()
+    expect(run(s0, A.moveStrip('b', 's2', 'x', 1))).toBe(s0)
+  })
+
+  it('does not touch lastMovedAt on a same-bay reorder', () => {
+    const s = run(fixture(), { ...A.moveStrip('b', 's1', 'x', 2), movedAt: T1 })
+    expect(s.boards.b.strips.s1.lastMovedAt).toBe(T0)
+  })
+
+  it('moves to another bay at an index and stamps lastMovedAt', () => {
+    const s = run(fixture(), { ...A.moveStrip('b', 's1', 'y', 0), movedAt: T1 })
+    const b = s.boards.b
+    expect(b.bays.x.stripOrder).toEqual(['s2', 's3'])
+    expect(b.bays.y.stripOrder).toEqual(['s1', 's4'])
+    expect(b.strips.s1).toMatchObject({ currentBayId: 'y', lastMovedAt: T1 })
+    assertInvariants(b)
+  })
+
+  it('leaves lastMovedAt alone when markMoved is false', () => {
+    const s = run(fixture(), A.moveStrip('b', 's1', 'y', 0, { markMoved: false }))
+    expect(s.boards.b.strips.s1).toMatchObject({ currentBayId: 'y', lastMovedAt: T0 })
+  })
+
+  it('appends when index is omitted or too large', () => {
+    let s = run(fixture(), A.moveStrip('b', 's1', 'y'))
+    expect(s.boards.b.bays.y.stripOrder).toEqual(['s4', 's1'])
+    s = run(fixture(), A.moveStrip('b', 's1', 'y', 99))
+    expect(s.boards.b.bays.y.stripOrder).toEqual(['s4', 's1'])
+  })
+
+  it('moves into an empty bay', () => {
+    const s = run(fixture(), A.moveStrip('b', 's4', 'z', 0))
+    expect(s.boards.b.bays.y.stripOrder).toEqual([])
+    expect(s.boards.b.bays.z.stripOrder).toEqual(['s4'])
+    assertInvariants(s.boards.b)
+  })
+
+  it('ignores unknown strip or bay', () => {
+    const s0 = fixture()
+    expect(run(s0, A.moveStrip('b', 'nope', 'z', 0))).toBe(s0)
+    expect(run(s0, A.moveStrip('b', 's1', 'nope', 0))).toBe(s0)
+  })
+})
+
+describe('settings', () => {
+  it('toggles keepScreenOn', () => {
+    const s0 = initialState({ boardId: 'b' })
+    const s1 = run(s0, A.setKeepScreenOn(true))
+    expect(s1.settings.keepScreenOn).toBe(true)
+    expect(run(s1, A.setKeepScreenOn(true))).toBe(s1)
+    expect(run(s1, A.setKeepScreenOn(false)).settings.keepScreenOn).toBe(false)
+  })
+})

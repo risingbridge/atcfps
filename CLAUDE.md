@@ -60,7 +60,16 @@ new build shows on the *second* open after a deploy.
   cross-bay drop, never during drag-over or same-bay reorder.
 - Removing a strip archives it (`Board.archive`, newest first, capped at
   500). Undo and restore-from-archive both drop the entry.
+- A strip may span into the bay immediately to its right (`spanBayId`);
+  `normalizeSpans()` clears any span that stops being adjacent. The
+  right bay renders a placeholder; `useSpanAlignment` measures the DOM
+  to line the two up and is frozen while a drag is in progress (dnd-kit
+  caches rects — never shift layout under it).
 - Always ≥ 1 board; deleting the last one creates a fresh empty board.
+- The board is the single scroll container (both axes); bay headers and
+  footers are sticky. Bays must not scroll individually — a spanning
+  strip has to overflow its bay.
+- Tabs on one origin sync through the `storage` event (`replaceState`).
 
 ## UI conventions (iPad-first)
 

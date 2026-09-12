@@ -61,6 +61,8 @@ Strip (base fields shared by all types)
   - createdAt
   - lastMovedAt
   - colorOverride (optional, manual highlight)
+  - spanBayId (optional; Phase 8) // the bay immediately to the right —
+                                  // the strip is drawn across both
 
 FlightStrip extends Strip
   - flightKind: "arrival" | "departure" | "other"   // drives strip colour

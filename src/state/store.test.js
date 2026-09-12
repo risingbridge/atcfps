@@ -452,3 +452,82 @@ describe('archive', () => {
     expect(sanitizeBoard({ bayOrder: [], bays: {} }, 'x').archive).toEqual([])
   })
 })
+
+describe('spanning two bays', () => {
+  // fixture bays: x | y | z
+  it('spanStrip moves into the left bay and spans into its right neighbour', () => {
+    const s = run(fixture(), A.spanStrip('b', 's4', 'x', 1, T1)) // s4 was in y
+    const b = s.boards.b
+    expect(b.bays.x.stripOrder).toEqual(['s1', 's4', 's2', 's3'])
+    expect(b.bays.y.stripOrder).toEqual([])
+    expect(b.strips.s4).toMatchObject({ currentBayId: 'x', spanBayId: 'y', lastMovedAt: T1 })
+    assertInvariants(b)
+  })
+
+  it('spanStrip on the last bay is a plain move (nothing to span into)', () => {
+    const s = run(fixture(), A.spanStrip('b', 's1', 'z', null, T1))
+    expect(s.boards.b.strips.s1).toMatchObject({ currentBayId: 'z' })
+    expect(s.boards.b.strips.s1.spanBayId).toBeUndefined()
+  })
+
+  it('spanStrip within the same bay keeps lastMovedAt and is idempotent', () => {
+    const s1 = run(fixture(), A.spanStrip('b', 's1', 'x', 0, T1))
+    expect(s1.boards.b.strips.s1).toMatchObject({ spanBayId: 'y', lastMovedAt: T0 })
+    expect(run(s1, A.spanStrip('b', 's1', 'x', 0, T1))).toBe(s1)
+  })
+
+  it('spanWith: right neighbour sets, left neighbour moves left and spans back, null clears', () => {
+    let s = run(fixture(), A.spanWith('b', 's1', 'y', T1))
+    expect(s.boards.b.strips.s1).toMatchObject({ currentBayId: 'x', spanBayId: 'y' })
+    s = run(s, A.spanWith('b', 's1', null))
+    expect(s.boards.b.strips.s1.spanBayId).toBeUndefined()
+    s = run(s, A.spanWith('b', 's4', 'x', T1)) // s4 in y, x is its left neighbour
+    expect(s.boards.b.strips.s4).toMatchObject({ currentBayId: 'x', spanBayId: 'y', lastMovedAt: T1 })
+    expect(s.boards.b.bays.x.stripOrder.at(-1)).toBe('s4')
+    assertInvariants(s.boards.b)
+  })
+
+  it('spanWith ignores non-neighbours', () => {
+    const s0 = fixture()
+    expect(run(s0, A.spanWith('b', 's1', 'z'))).toBe(s0)
+    expect(run(s0, A.spanWith('b', 's1', 'nope'))).toBe(s0)
+  })
+
+  it('moveStrip to another bay clears the span; same-bay reorder keeps it', () => {
+    let s = run(fixture(), A.spanWith('b', 's1', 'y'))
+    s = run(s, A.moveStrip('b', 's1', 'x', 2))
+    expect(s.boards.b.strips.s1.spanBayId).toBe('y')
+    s = run(s, A.moveStrip('b', 's1', 'z', 0))
+    expect(s.boards.b.strips.s1.spanBayId).toBeUndefined()
+  })
+
+  it('snaps back when the bays are no longer neighbours', () => {
+    const s0 = run(fixture(), A.spanWith('b', 's1', 'y'))
+    expect(run(s0, A.reorderBays('b', ['x', 'z', 'y'])).boards.b.strips.s1.spanBayId).toBeUndefined()
+    expect(run(s0, A.reorderBays('b', ['z', 'x', 'y'])).boards.b.strips.s1.spanBayId).toBe('y') // still adjacent
+    expect(run(s0, A.deleteBay('b', 'y')).boards.b.strips.s1.spanBayId).toBeUndefined()
+  })
+
+  it('a spanning strip removed and undone keeps its span if still valid', () => {
+    const s0 = run(fixture(), A.spanWith('b', 's1', 'y'))
+    const strip = s0.boards.b.strips.s1
+    const s1 = run(s0, A.deleteStrip('b', 's1', T1), A.restoreStrip('b', strip, 0))
+    expect(s1.boards.b.strips.s1.spanBayId).toBe('y')
+    const s2 = run(s0, A.deleteStrip('b', 's1', T1), A.reorderBays('b', ['x', 'z', 'y']), A.restoreStrip('b', strip, 0))
+    expect(s2.boards.b.strips.s1.spanBayId).toBeUndefined()
+  })
+
+  it('restoreFromArchive drops the span', () => {
+    const s0 = run(fixture(), A.spanWith('b', 's1', 'y'), A.deleteStrip('b', 's1', T1))
+    const s = run(s0, A.restoreFromArchive('b', `s1:${T1}`, 'x', 'n', T1))
+    expect(s.boards.b.strips.s1.spanBayId).toBeUndefined()
+  })
+
+  it('sanitizeBoard keeps a valid span and drops an invalid one', () => {
+    const src = run(fixture(), A.spanWith('b', 's1', 'y'), A.spanWith('b', 's4', 'z')).boards.b
+    const tampered = { ...src, strips: { ...src.strips, s4: { ...src.strips.s4, spanBayId: 'x' } } }
+    const clean = sanitizeBoard(tampered, 'imp')
+    expect(clean.strips.s1.spanBayId).toBe('y')
+    expect(clean.strips.s4.spanBayId).toBeUndefined()
+  })
+})

@@ -17,7 +17,9 @@ build ships a Content-Security-Policy that blocks any outbound request.
 - Coloured strips like real strip paper: arrivals yellow, departures blue,
   other traffic black, vehicles red, info amber
 - iPad-first: three bays across in landscape, 44 px+ touch targets
-- Drag strips between and within bays; long-press to lift on touch
+- Drag strips between and within bays; long-press to lift on touch; drop on
+  the gap between two bays to lay a strip across both (e.g. a vehicle cleared
+  on TWY and RWY)
 - Tap a strip to edit or remove; tap the level cell to set the cleared
   level right on the strip (FL / altitude picker); highlight stripe;
   time-in-bay ageing

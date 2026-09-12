@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { FLIGHT_FIELDS, FLIGHT_KINDS, FLIGHT_KIND_META, normalizeFlightKind } from '../lib/stripTypes.js'
 import ColorPicker from './ColorPicker.jsx'
+import SpanControl from './SpanControl.jsx'
 
 const LABELS = {
   callsign: 'Callsign',
@@ -25,11 +26,12 @@ function pickFields(src) {
  * Create/edit form for flight strips. Mount it to open; it calls onClose when
  * dismissed (Esc, backdrop, Cancel) and onSubmit(fields) on save.
  */
-export default function FlightStripModal({ initial, onSubmit, onClose, onDelete }) {
+export default function FlightStripModal({ initial, onSubmit, onClose, onDelete, span }) {
   const ref = useRef(null)
   const [fields, setFields] = useState(() => ({ ...blank(), ...pickFields(initial) }))
   const [color, setColor] = useState(initial?.colorOverride ?? '')
   const [kind, setKind] = useState(() => normalizeFlightKind(initial?.flightKind))
+  const [spanWith, setSpanWith] = useState(span?.value ?? null)
   const editing = !!initial
 
   useEffect(() => {
@@ -50,7 +52,7 @@ export default function FlightStripModal({ initial, onSubmit, onClose, onDelete 
     const trimmed = Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, v.trim()]))
     if (!trimmed.callsign) return
     const out = { ...trimmed, flightKind: kind }
-    onSubmit(editing ? { ...out, colorOverride: color || undefined } : out)
+    onSubmit(editing ? { ...out, colorOverride: color || undefined, ...(span ? { spanWith } : {}) } : out)
     ref.current.close()
   }
 
@@ -99,8 +101,9 @@ export default function FlightStripModal({ initial, onSubmit, onClose, onDelete 
             <textarea className="input" rows={2} value={fields.remarks} onChange={set('remarks')} />
           </label>
           {editing && (
-            <div className="field-wide">
+            <div className="field-wide field-row">
               <ColorPicker value={color} onChange={setColor} />
+              {span && <SpanControl value={spanWith} options={span.options} onChange={setSpanWith} />}
             </div>
           )}
         </div>

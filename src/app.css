@@ -63,14 +63,14 @@
 }
 
 .board {
+  position: relative;
   flex: 1;
   display: flex;
   align-items: flex-start;
-  gap: var(--board-gutter);
+  gap: 0; /* BayGap elements provide the gutters (they're drop zones) */
   padding: var(--board-gutter);
   padding-bottom: calc(var(--board-gutter) + env(safe-area-inset-bottom));
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: auto;
   min-height: 0;
   scroll-snap-type: x proximity;
   scroll-padding-left: var(--board-gutter);
@@ -87,10 +87,11 @@
 /* ---------- bays ---------- */
 
 .bay {
+  position: relative;
   display: flex;
   flex-direction: column;
   width: var(--bay-width);
-  max-height: 100%;
+  min-height: 200px;
   flex-shrink: 0;
   scroll-snap-align: start;
   background: var(--bg-bay);
@@ -99,12 +100,17 @@
 }
 
 .bay-header {
+  position: sticky;
+  top: 0;
+  z-index: 3;
   display: flex;
   align-items: center;
   gap: var(--s-2);
   min-height: 52px;
   padding: var(--s-1) var(--s-1) var(--s-1) var(--s-3);
+  background: var(--bg-bay);
   border-bottom: 1px solid color-mix(in srgb, var(--chrome) 40%, transparent);
+  border-radius: var(--radius) var(--radius) 0 0;
 }
 
 .bay-header {
@@ -121,7 +127,7 @@
 }
 
 .bay[style*='--bay-accent'] .bay-header {
-  background: color-mix(in srgb, var(--bay-accent) 14%, transparent);
+  background: color-mix(in srgb, var(--bay-accent) 14%, var(--bg-bay));
 }
 
 .bay-name {
@@ -153,11 +159,63 @@
   gap: 6px;
   padding: var(--s-2);
   min-height: 64px;
-  overflow-y: auto;
+  flex: 1;
 }
 
 .bay-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  background: var(--bg-bay);
   border-top: 1px solid color-mix(in srgb, var(--chrome) 40%, transparent);
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+.bay-new {
+  margin-left: var(--board-gutter);
+}
+
+/* gutter between adjacent bays; a drop zone while a strip is dragged */
+.bay-gap {
+  position: relative;
+  flex-shrink: 0;
+  align-self: stretch;
+  width: calc(var(--board-gutter) + 36px);
+  margin: 0 -18px;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.bay-gap-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 18px;
+  width: var(--board-gutter);
+  border-radius: 3px;
+  transition: background 0.12s;
+}
+
+.bay-gap.is-armed .bay-gap-line {
+  background: color-mix(in srgb, var(--chrome) 30%, transparent);
+}
+
+.bay-gap.is-over .bay-gap-line {
+  background: var(--chrome-strong);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--chrome-strong) 40%, transparent);
+}
+
+/* a strip spanning into the bay on its right: drawn over the gutter and the right column */
+.strip-span {
+  position: relative;
+  z-index: 2;
+  width: calc(200% + var(--board-gutter) + 2 * var(--s-2));
+}
+
+.strip-span-placeholder {
+  flex-shrink: 0;
+  border: 1px dashed color-mix(in srgb, var(--chrome) 35%, transparent);
+  border-radius: 2px;
 }
 
 .bay-new {
@@ -1049,6 +1107,17 @@ textarea.input {
   grid-column: 1 / -1;
 }
 
+.field-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4);
+  align-items: flex-end;
+}
+
+.field-row > .field {
+  flex: 1 1 300px;
+}
+
 .field-grid.field-grid-1 {
   grid-template-columns: 1fr;
 }
@@ -1351,5 +1420,14 @@ textarea.input {
 
   .cell-age {
     color: #000;
+  }
+
+  .strip-span {
+    width: auto;
+  }
+
+  .bay-gap,
+  .strip-span-placeholder {
+    display: none !important;
   }
 }

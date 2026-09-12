@@ -27,7 +27,7 @@ import Strip from './Strip.jsx'
  *  - bays: a horizontal sortable over the bay headers (ids prefixed so they
  *    don't collide with the bays' strip-droppable ids).
  */
-export default function StripDndContext({ children }) {
+export default function StripDndContext({ children, onDraggingChange }) {
   const { board, dispatch } = useActiveBoard()
   const [activeId, setActiveId] = useState(null)
   const origin = useRef(null) // { bayId, index } at drag start
@@ -41,7 +41,20 @@ export default function StripDndContext({ children }) {
   function bayOf(over) {
     if (!over) return null
     const data = over.data.current
+    if (data?.type === 'gap') return null
     return data?.type === 'bay' ? over.id : data?.bayId ?? null
+  }
+
+  /** Index in `bayId` for a drop at the dragged rect's top, from the DOM (used for gap drops). */
+  function indexFromDom(bayId, active) {
+    const list = document.querySelector(`[data-bay-strips="${CSS.escape(bayId)}"]`)
+    const top = active.rect.current.translated?.top
+    if (!list || top == null) return null
+    return [...list.children].filter((c) => {
+      if (!c.hasAttribute('data-strip-id') || c.dataset.stripId === active.id) return false
+      const r = c.getBoundingClientRect()
+      return top > r.top + r.height / 2
+    }).length
   }
 
   /** Index in `bayId` for a drop described by `over`, using pointer position for strips. */
@@ -56,6 +69,7 @@ export default function StripDndContext({ children }) {
   }
 
   function onDragStart({ active }) {
+    onDraggingChange?.(true)
     if (active.data.current?.type === 'baySort') return
     const strip = board.strips[active.id]
     if (!strip) return
@@ -73,6 +87,7 @@ export default function StripDndContext({ children }) {
 
   function onDragEnd({ active, over }) {
     if (active.data.current?.type === 'baySort') {
+      settle()
       const from = active.data.current.bayId
       const to = over?.data.current?.type === 'baySort' ? over.data.current.bayId : null
       if (to && to !== from) {
@@ -81,6 +96,15 @@ export default function StripDndContext({ children }) {
       return
     }
     const strip = board.strips[active.id]
+    if (strip && over?.data.current?.type === 'gap') {
+      const { leftBayId } = over.data.current
+      dispatch(actions.spanStrip(board.id, active.id, leftBayId, indexFromDom(leftBayId, active)))
+      if (origin.current && origin.current.bayId !== leftBayId) {
+        dispatch(actions.updateStrip(board.id, active.id, { lastMovedAt: new Date().toISOString() }))
+      }
+      finish()
+      return
+    }
     const toBay = bayOf(over)
     if (strip && toBay) {
       let index
@@ -99,7 +123,10 @@ export default function StripDndContext({ children }) {
   }
 
   function onDragCancel({ active }) {
-    if (active.data.current?.type === 'baySort') return
+    if (active.data.current?.type === 'baySort') {
+      settle()
+      return
+    }
     if (origin.current) {
       dispatch(actions.moveStrip(board.id, active.id, origin.current.bayId, origin.current.index, { markMoved: false }))
     }
@@ -109,6 +136,13 @@ export default function StripDndContext({ children }) {
   function finish() {
     setActiveId(null)
     origin.current = null
+    settle()
+  }
+
+  // dnd-kit clears its transforms in its own render after ours; report
+  // "not dragging" after that so layout measurement sees the settled DOM.
+  function settle() {
+    setTimeout(() => onDraggingChange?.(false), 0)
   }
 
   const activeStrip = activeId ? board.strips[activeId] : null
@@ -145,6 +179,8 @@ function collisionDetection(args) {
   args = { ...args, droppableContainers: args.droppableContainers.filter((c) => !isBaySort(c)) }
   const within = pointerWithin(args)
   const hits = within.length ? within : rectIntersection(args)
+  const gap = within.find((h) => h.data?.droppableContainer?.data?.current?.type === 'gap')
+  if (gap) return [gap]
   const strip = hits.find((h) => h.data?.droppableContainer?.data?.current?.type === 'strip')
   if (strip) return [strip]
   const bay = hits.find((h) => h.data?.droppableContainer?.data?.current?.type === 'bay')

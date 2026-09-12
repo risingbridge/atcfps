@@ -61,12 +61,17 @@ export function load(storage) {
   return state
 }
 
+/** The exact string save() writes for `state`. */
+export function serialize(state) {
+  return JSON.stringify({ version: SCHEMA_VERSION, ...state })
+}
+
 /** @param {import('../state/store.js').AppState} state */
 export function save(state, storage) {
   const store = getStore(storage)
   if (!store) return false
   try {
-    store.setItem(STORAGE_KEY, JSON.stringify({ version: SCHEMA_VERSION, ...state }))
+    store.setItem(STORAGE_KEY, serialize(state))
     return true
   } catch {
     return false // quota exceeded / private mode

@@ -69,6 +69,64 @@ function archiveStrips(board, strips, at) {
   return [...entries, ...(board.archive ?? [])].slice(0, ARCHIVE_LIMIT)
 }
 
+/** Id of the bay immediately to the right of `bayId`, or null. */
+export function rightNeighbour(board, bayId) {
+  const i = board.bayOrder.indexOf(bayId)
+  return i >= 0 ? (board.bayOrder[i + 1] ?? null) : null
+}
+
+/** Id of the bay immediately to the left of `bayId`, or null. */
+export function leftNeighbour(board, bayId) {
+  const i = board.bayOrder.indexOf(bayId)
+  return i > 0 ? board.bayOrder[i - 1] : null
+}
+
+/**
+ * A strip may span only into the bay immediately right of its own. Clear
+ * every span that no longer satisfies that (the snap-back after a bay is
+ * reordered or deleted). Returns the same board object when nothing changed.
+ */
+function normalizeSpans(board) {
+  let strips = null
+  for (const strip of Object.values(board.strips)) {
+    if (strip.spanBayId && strip.spanBayId !== rightNeighbour(board, strip.currentBayId)) {
+      strips ??= { ...board.strips }
+      const { spanBayId: _s, ...rest } = strip
+      strips[strip.id] = rest
+    }
+  }
+  return strips ? { ...board, strips } : board
+}
+
+/**
+ * Move `stripId` to `targetIndex` in `targetBayId` (dnd-kit arrayMove
+ * semantics; null index appends). Returns { board, bayChanged } — `board`
+ * is the same object when nothing moved.
+ */
+function placeStrip(b, stripId, targetBayId, targetIndex) {
+  const strip = b.strips[stripId]
+  const target = b.bays[targetBayId]
+  if (!strip || !target) return { board: b, bayChanged: false }
+  const source = b.bays[strip.currentBayId]
+  const bays = { ...b.bays }
+
+  const sourceOrder = source ? source.stripOrder.filter((id) => id !== strip.id) : null
+  if (source) bays[source.id] = { ...source, stripOrder: sourceOrder }
+
+  const base = source?.id === target.id ? sourceOrder : target.stripOrder.filter((id) => id !== strip.id)
+  const idx = targetIndex == null ? base.length : Math.max(0, Math.min(targetIndex, base.length))
+  const targetOrder = [...base.slice(0, idx), strip.id, ...base.slice(idx)]
+  bays[target.id] = { ...bays[target.id], stripOrder: targetOrder }
+
+  const unchanged = source?.id === target.id && source.stripOrder.every((id, i) => id === targetOrder[i])
+  if (unchanged) return { board: b, bayChanged: false }
+
+  const bayChanged = strip.currentBayId !== target.id
+  const nextStrip = { ...strip, currentBayId: target.id }
+  if (bayChanged) delete nextStrip.spanBayId
+  return { board: { ...b, bays, strips: { ...b.strips, [strip.id]: nextStrip } }, bayChanged }
+}
+
 /** Archive without the newest entry for each of `stripIds` (used by undo). */
 function dropNewestEntries(archive, stripIds) {
   const pending = new Set(stripIds)
@@ -126,6 +184,19 @@ export const actions = {
   moveStrip: (boardId, stripId, targetBayId, targetIndex = null, { markMoved = true } = {}) => ({
     type: 'moveStrip', boardId, stripId, targetBayId, targetIndex, movedAt: markMoved ? now() : null,
   }),
+
+  /**
+   * Gap drop: put the strip at `index` in `leftBayId` and span it into the
+   * bay to the right. Falls back to a plain move if there is no right bay.
+   */
+  spanStrip: (boardId, stripId, leftBayId, index = null, at = now()) => ({
+    type: 'spanStrip', boardId, stripId, leftBayId, index, at,
+  }),
+  /**
+   * Editor control: span into `otherBayId` (the left or right neighbour
+   * of the strip's bay), or null to clear the span.
+   */
+  spanWith: (boardId, stripId, otherBayId, at = now()) => ({ type: 'spanWith', boardId, stripId, otherBayId, at }),
 
   setKeepScreenOn: (value) => ({ type: 'setKeepScreenOn', value }),
 
@@ -252,7 +323,7 @@ export function reducer(state, action) {
         const same = next.length === b.bayOrder.length && next.every((id) => b.bays[id])
         const unique = new Set(next).size === next.length
         if (!same || !unique) return b
-        return { ...b, bayOrder: [...next] }
+        return normalizeSpans({ ...b, bayOrder: [...next] })
       })
     case 'deleteBay':
       return updateBoard(state, action.boardId, (b) => {
@@ -261,13 +332,13 @@ export function reducer(state, action) {
         const strips = { ...b.strips }
         const removed = bay.stripOrder.map((id) => b.strips[id]).filter(Boolean)
         for (const id of bay.stripOrder) delete strips[id]
-        return {
+        return normalizeSpans({
           ...b,
           bays: withoutKey(b.bays, bay.id),
           bayOrder: b.bayOrder.filter((id) => id !== bay.id),
           strips,
           archive: archiveStrips(b, removed, action.at ?? now()),
-        }
+        })
       })
 
     // ----- strips -----
@@ -329,28 +400,48 @@ export function reducer(state, action) {
       })
     case 'moveStrip':
       return updateBoard(state, action.boardId, (b) => {
+        const { board, bayChanged } = placeStrip(b, action.stripId, action.targetBayId, action.targetIndex)
+        if (board === b) return b
+        if (!(action.movedAt && bayChanged)) return board
+        const strip = board.strips[action.stripId]
+        return { ...board, strips: { ...board.strips, [strip.id]: { ...strip, lastMovedAt: action.movedAt } } }
+      })
+
+    // ----- spanning two bays -----
+    case 'spanStrip':
+      return updateBoard(state, action.boardId, (b) => {
+        if (!b.strips[action.stripId] || !b.bays[action.leftBayId]) return b
+        const right = rightNeighbour(b, action.leftBayId)
+        const { board, bayChanged } = placeStrip(b, action.stripId, action.leftBayId, action.index)
+        const strip = board.strips[action.stripId]
+        if (!right) return board
+        if (board === b && strip.spanBayId === right) return b
+        const next = { ...strip, spanBayId: right }
+        if (bayChanged) next.lastMovedAt = action.at
+        return { ...board, strips: { ...board.strips, [strip.id]: next } }
+      })
+    case 'spanWith':
+      return updateBoard(state, action.boardId, (b) => {
         const strip = b.strips[action.stripId]
-        const target = b.bays[action.targetBayId]
-        if (!strip || !target) return b
-        const source = b.bays[strip.currentBayId]
-        const bays = { ...b.bays }
-
-        const sourceOrder = source ? source.stripOrder.filter((id) => id !== strip.id) : null
-        if (source) bays[source.id] = { ...source, stripOrder: sourceOrder }
-
-        const base = source?.id === target.id ? sourceOrder : target.stripOrder.filter((id) => id !== strip.id)
-        const idx =
-          action.targetIndex == null ? base.length : Math.max(0, Math.min(action.targetIndex, base.length))
-        const targetOrder = [...base.slice(0, idx), strip.id, ...base.slice(idx)]
-        bays[target.id] = { ...bays[target.id], stripOrder: targetOrder }
-
-        const unchanged =
-          source?.id === target.id && source.stripOrder.every((id, i) => id === targetOrder[i])
-        if (unchanged) return b
-
-        const nextStrip = { ...strip, currentBayId: target.id }
-        if (action.movedAt && strip.currentBayId !== target.id) nextStrip.lastMovedAt = action.movedAt
-        return { ...b, bays, strips: { ...b.strips, [strip.id]: nextStrip } }
+        if (!strip) return b
+        if (!action.otherBayId) {
+          if (!strip.spanBayId) return b
+          const { spanBayId: _s, ...rest } = strip
+          return { ...b, strips: { ...b.strips, [strip.id]: rest } }
+        }
+        if (action.otherBayId === rightNeighbour(b, strip.currentBayId)) {
+          if (strip.spanBayId === action.otherBayId) return b
+          return { ...b, strips: { ...b.strips, [strip.id]: { ...strip, spanBayId: action.otherBayId } } }
+        }
+        if (action.otherBayId === leftNeighbour(b, strip.currentBayId)) {
+          const { board } = placeStrip(b, strip.id, action.otherBayId, null)
+          const moved = board.strips[strip.id]
+          return {
+            ...board,
+            strips: { ...board.strips, [strip.id]: { ...moved, spanBayId: strip.currentBayId, lastMovedAt: action.at } },
+          }
+        }
+        return b
       })
 
     // ----- import / undo -----
@@ -389,13 +480,13 @@ export function reducer(state, action) {
         }
         const bayOrder = [...b.bayOrder]
         bayOrder.splice(clampIndex(action.index, bayOrder.length), 0, bay.id)
-        return {
+        return normalizeSpans({
           ...b,
           bays: { ...b.bays, [bay.id]: { ...bay, stripOrder } },
           bayOrder,
           strips,
           archive: dropNewestEntries(b.archive, stripOrder),
-        }
+        })
       })
     case 'restoreStrip':
       return updateBoard(state, action.boardId, (b) => {
@@ -405,12 +496,12 @@ export function reducer(state, action) {
         if (!bay) return b
         const stripOrder = [...bay.stripOrder]
         stripOrder.splice(clampIndex(action.index, stripOrder.length), 0, strip.id)
-        return {
+        return normalizeSpans({
           ...b,
           bays: { ...b.bays, [bay.id]: { ...bay, stripOrder } },
           strips: { ...b.strips, [strip.id]: strip },
           archive: dropNewestEntries(b.archive, [strip.id]),
-        }
+        })
       })
 
     // ----- archive -----
@@ -420,7 +511,8 @@ export function reducer(state, action) {
         const bay = b.bays[action.targetBayId]
         if (!entry || !bay) return b
         const id = b.strips[entry.strip.id] ? action.newId : entry.strip.id
-        const strip = { ...entry.strip, id, currentBayId: bay.id, lastMovedAt: action.at }
+        const { spanBayId: _s, ...snapshot } = entry.strip
+        const strip = { ...snapshot, id, currentBayId: bay.id, lastMovedAt: action.at }
         return {
           ...b,
           bays: { ...b.bays, [bay.id]: { ...bay, stripOrder: [...bay.stripOrder, id] } },
@@ -430,6 +522,11 @@ export function reducer(state, action) {
       })
     case 'clearArchive':
       return updateBoard(state, action.boardId, (b) => ((b.archive ?? []).length ? { ...b, archive: [] } : b))
+
+    // ----- sync -----
+    case 'replaceState':
+      // another tab saved; adopt its state wholesale (already validated by storage.load)
+      return action.state && action.state.boards ? action.state : state
 
     // ----- settings -----
     case 'setKeepScreenOn':
@@ -498,7 +595,7 @@ export function sanitizeBoard(src, id) {
     })
     if (archive.length >= ARCHIVE_LIMIT) break
   }
-  return { id, name: cleanName(src.name), bayOrder, bays, strips, archive }
+  return normalizeSpans({ id, name: cleanName(src.name), bayOrder, bays, strips, archive })
 }
 
 /** Rebuild one strip from untrusted data; null if unusable. */
@@ -518,6 +615,7 @@ function sanitizeStrip(raw, id, bayId) {
     lastMovedAt: typeof raw.lastMovedAt === 'string' ? raw.lastMovedAt : now(),
   }
   if (typeof raw.colorOverride === 'string' && raw.colorOverride) strip.colorOverride = raw.colorOverride
+  if (typeof raw.spanBayId === 'string' && raw.spanBayId) strip.spanBayId = raw.spanBayId
   if (def.key === 'flight') strip.flightKind = normalizeFlightKind(raw.flightKind)
   for (const f of def.fields) strip[f] = typeof raw[f] === 'string' ? raw[f] : ''
   if (def.quickAdd && !strip[def.quickField]) return null

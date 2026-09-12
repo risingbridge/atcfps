@@ -52,7 +52,7 @@ Defaults I'll use unless told otherwise:
 
 ---
 
-> **Status (2026-09-12):** Phases 0–7 built; 0–6 deployed.
+> **Status (2026-09-12):** Phases 0–8 built; 0–7 deployed.
 
 ## Phase 0 — Scaffold ✅
 
@@ -467,6 +467,105 @@ strip still opens the full editor).
 - Closes on outside tap, Esc, or Done; stays open while stepping.
 - Empty cleared level shows a dashed placeholder so the tap target is
   discoverable.
+
+---
+
+## Phase 8 — A strip across two bays ✅
+
+Decided with the user: **straddling strip** (one wide strip drawn across
+the gap between two adjacent bays); placed either by **dropping on the
+gap** or from the **editor**; **any strip type**; if the bays stop being
+neighbours the strip **snaps back** into its primary bay.
+
+### The layout change this needs
+
+A strip can't be drawn outside a scrolling box, and each bay currently
+scrolls its own strip list. So the board becomes the single scroll
+container (both axes), bays grow to their content, bay headers are
+`position: sticky; top: 0` and the type-button footer `sticky; bottom: 0`.
+One scroll gesture works everywhere; drag auto-scroll gets simpler too.
+Needs a look on the real iPad.
+
+### Data model
+
+- `Strip.spanBayId?: string` — the bay **immediately to the right** of
+  `currentBayId` in `bayOrder`. The strip lives only in the primary (left)
+  bay's `stripOrder`; the right bay shows a placeholder at the same row.
+- Invariant (enforced by `normalizeSpans(board)`, called from every
+  action that changes `bayOrder` or moves the strip): `spanBayId` is
+  either absent or exactly `bayOrder[indexOf(currentBayId) + 1]`. Anything
+  else is cleared — that's the snap-back.
+- `sanitizeBoard` keeps a valid `spanBayId`, drops an invalid one.
+  Archive snapshots keep the field; restore clears it.
+
+### Reducer
+
+- `spanStrip(boardId, stripId, leftBayId, index, at)` — gap drop: move
+  the strip into the left bay at `index` (dnd-kit semantics), set
+  `spanBayId` to the right neighbour. `lastMovedAt` stamped only if the
+  primary bay changed.
+- `spanWith(boardId, stripId, otherBayId | null)` — editor control:
+  right neighbour → set span; left neighbour → move the strip to the end
+  of that bay and span back into the current one; null → clear.
+- `moveStrip` clears the span when the bay changes; same-bay reorder
+  keeps it. `reorderBays`, `deleteBay`, `restoreBay`, `restoreFromArchive`
+  run `normalizeSpans`.
+- Tests: set/clear via both actions, adjacency validation, snap-back on
+  reorder and on deleting either bay, moveStrip clearing, sanitize
+  round-trip, undo of a removal restoring a spanning strip.
+
+### Rendering + alignment
+
+- The spanning strip renders in the left bay with
+  `width: calc(200% + gutter + …)` and `position: relative; z-index: 2`
+  so it paints over the right bay's column.
+- The right bay renders a `SpanPlaceholder` (same height) at row `j`.
+  `useSpanAlignment(board)` (layout effect on the board container)
+  measures the strip's top and the right bay's strip tops, picks `j` =
+  number of right-bay strips whose centre is above it, and sets a top
+  margin on whichever of strip / placeholder is higher so they line up.
+  Re-runs on every board change; setState only when the result differs
+  (converges in ≤ 2 passes).
+- Placeholder is not a sortable item; drop-index maths in
+  `StripDndContext` already works off `stripOrder`, so it's unaffected.
+- **Learned while building:** the row choice must use the right bay's
+  *natural* positions (subtracting the placeholder's own height/margin),
+  and measuring must be **frozen during a drag** — dnd-kit has transforms
+  applied and caches droppable rects, so shifting the DOM under it makes
+  drops resolve to the wrong target. `StripDndContext` reports drag
+  start/settle to `App`, which passes `frozen` to the hook.
+- Also added: tabs on the same origin now adopt each other's saves via
+  the `storage` event (`replaceState`), after a second dev tab clobbered
+  the board mid-test.
+
+### Drag-and-drop
+
+- A `BayGap` droppable between every adjacent pair: 48 px wide with
+  negative side margins so it overlaps 18 px into each neighbour (a real
+  touch target) but only paints the 12 px gutter. Highlights while a drag
+  is over it.
+- Collision detection prefers gap → strip → bay. `onDragOver` ignores
+  gaps (the strip stays where it is until the drop). `onDragEnd` on a gap
+  → `spanStrip` with the index computed from pointer Y against the left
+  bay's strips.
+- Dropping a spanning strip onto a single bay or reordering across bays
+  clears the span (via `moveStrip`).
+
+### Editor
+
+- Both edit modals get an **"Also in"** control: None / left neighbour /
+  right neighbour (names), disabled when the strip's bay has no
+  neighbours. Saves via `spanWith`.
+
+### Verification
+
+- Reducer tests; lint; build.
+- Chromium at 1194 × 834: drop on a gap → strip straddles, right bay's
+  strips flow around it; add/remove strips above it in either bay →
+  stays aligned; reorder bays → snaps back; delete the right bay → snaps
+  back; set/clear from the editor; scroll the board with many strips —
+  headers and footers stay put.
+- iPad: the new scroll model, gap drop by touch.
 
 ---
 

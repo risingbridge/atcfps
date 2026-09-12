@@ -71,6 +71,7 @@ export default function Strip({ strip, now, onClick, onEditLevel, innerRef, styl
       className={`strip ${className} ${minutes != null ? ageClass(minutes) : ''}`}
       data-type={strip.type}
       data-kind={kind}
+      data-strip-id={strip.id}
       style={merged}
       onClick={onClick}
       {...dragProps}

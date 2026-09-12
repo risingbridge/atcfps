@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { actions as A, initialState, reducer, shiftInOrder } from './store.js'
+import { actions as A, initialState, reducer, sanitizeBoard, shiftInOrder } from './store.js'
 
 const T0 = '2026-09-12T10:00:00.000Z'
 const T1 = '2026-09-12T10:05:00.000Z'
@@ -241,5 +241,77 @@ describe('settings', () => {
     expect(s1.settings.keepScreenOn).toBe(true)
     expect(run(s1, A.setKeepScreenOn(true))).toBe(s1)
     expect(run(s1, A.setKeepScreenOn(false)).settings.keepScreenOn).toBe(false)
+  })
+})
+
+describe('import / restore', () => {
+  it('importBoard adds a sanitized copy under a new id and activates it', () => {
+    const src = fixture().boards.b
+    const s = run(initialState({ boardId: 'b' }), A.importBoard(src, 'imp'))
+    expect(s.boardOrder).toEqual(['b', 'imp'])
+    expect(s.activeBoardId).toBe('imp')
+    expect(s.boards.imp.name).toBe('Board 1 (2)') // name clash resolved
+    expect(s.boards.imp.bayOrder).toEqual(['x', 'y', 'z'])
+    expect(Object.keys(s.boards.imp.strips).sort()).toEqual(['s1', 's2', 's3', 's4'])
+    assertInvariants(s.boards.imp)
+  })
+
+  it('sanitizeBoard drops dangling and unknown data', () => {
+    const b = sanitizeBoard(
+      {
+        name: ' Messy ',
+        bayOrder: ['x', 'ghost', 'x'],
+        bays: { x: { name: 'X', stripOrder: ['s1', 'nope', 's2', 's3'], color: '#123' }, orphan: { name: 'O' } },
+        strips: {
+          s1: { type: 'flight', callsign: 'SAS1', squawk: 1234, evil: 'x' },
+          s2: { type: 'alien', callsign: 'Z' },
+          s3: { type: 'info', message: '' },
+        },
+      },
+      'id',
+    )
+    expect(b.name).toBe('Messy')
+    expect(b.bayOrder).toEqual(['x'])
+    expect(b.bays.x).toMatchObject({ name: 'X', color: '#123', stripOrder: ['s1'] })
+    expect(b.strips.s1).toMatchObject({ type: 'flight', callsign: 'SAS1', squawk: '', currentBayId: 'x' })
+    expect(b.strips.s1.evil).toBeUndefined()
+    assertInvariants(b)
+  })
+
+  it('sanitizeBoard rejects garbage', () => {
+    expect(sanitizeBoard(null, 'id')).toBeNull()
+    expect(sanitizeBoard('str', 'id')).toBeNull()
+    expect(sanitizeBoard({}, 'id')).toMatchObject({ bayOrder: [], strips: {} })
+  })
+
+  it('restoreStrip puts a deleted strip back at its index', () => {
+    const s0 = fixture()
+    const strip = s0.boards.b.strips.s2
+    const s1 = run(s0, A.deleteStrip('b', 's2'))
+    const s2 = run(s1, A.restoreStrip('b', strip, 1))
+    expect(s2.boards.b.bays.x.stripOrder).toEqual(['s1', 's2', 's3'])
+    expect(run(s2, A.restoreStrip('b', strip, 1))).toBe(s2) // idempotent
+    assertInvariants(s2.boards.b)
+  })
+
+  it('restoreBay puts a deleted bay and its strips back', () => {
+    const s0 = fixture()
+    const bay = s0.boards.b.bays.x
+    const strips = s0.boards.b.strips
+    const s1 = run(s0, A.deleteBay('b', 'x'))
+    const s2 = run(s1, A.restoreBay('b', bay, strips, 0))
+    expect(s2.boards.b.bayOrder).toEqual(['x', 'y', 'z'])
+    expect(s2.boards.b.bays.x.stripOrder).toEqual(['s1', 's2', 's3'])
+    assertInvariants(s2.boards.b)
+  })
+
+  it('restoreBoard puts a deleted board back at its index', () => {
+    const s0 = run(fixture(), A.createBoard('B2', 'b2'))
+    const board = s0.boards.b
+    const s1 = run(s0, A.deleteBoard('b', 'r'))
+    const s2 = run(s1, A.restoreBoard(board, 0))
+    expect(s2.boardOrder).toEqual(['b', 'b2'])
+    expect(s2.activeBoardId).toBe('b')
+    assertInvariants(s2.boards.b)
   })
 })

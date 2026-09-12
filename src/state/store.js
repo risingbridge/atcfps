@@ -86,6 +86,15 @@ export const actions = {
   }),
 
   setKeepScreenOn: (value) => ({ type: 'setKeepScreenOn', value }),
+
+  /** Add a board (e.g. from an import) under a fresh id and make it active. */
+  importBoard: (board, id = makeId()) => ({ type: 'importBoard', board, id }),
+  /** Put a previously deleted board back at `index` with its original id. */
+  restoreBoard: (board, index) => ({ type: 'restoreBoard', board, index }),
+  /** Put a deleted bay (and its strips) back at `index` in bayOrder. */
+  restoreBay: (boardId, bay, strips, index) => ({ type: 'restoreBay', boardId, bay, strips, index }),
+  /** Put a deleted strip back at `index` in its bay. */
+  restoreStrip: (boardId, strip, index) => ({ type: 'restoreStrip', boardId, strip, index }),
 }
 
 // ---------------------------------------------------------------------------
@@ -284,6 +293,59 @@ export function reducer(state, action) {
         return { ...b, bays, strips: { ...b.strips, [strip.id]: nextStrip } }
       })
 
+    // ----- import / undo -----
+    case 'importBoard': {
+      const board = sanitizeBoard(action.board, action.id)
+      if (!board) return state
+      if (!board.name || state.boardOrder.some((id) => state.boards[id].name === board.name)) {
+        board.name = uniqueName(board.name || 'Imported board', Object.values(state.boards).map((b) => b.name))
+      }
+      return {
+        ...state,
+        boards: { ...state.boards, [board.id]: board },
+        boardOrder: [...state.boardOrder, board.id],
+        activeBoardId: board.id,
+      }
+    }
+    case 'restoreBoard': {
+      const board = sanitizeBoard(action.board, action.board?.id)
+      if (!board || state.boards[board.id]) return state
+      const boardOrder = [...state.boardOrder]
+      boardOrder.splice(clampIndex(action.index, boardOrder.length), 0, board.id)
+      return { ...state, boards: { ...state.boards, [board.id]: board }, boardOrder, activeBoardId: board.id }
+    }
+    case 'restoreBay':
+      return updateBoard(state, action.boardId, (b) => {
+        const bay = action.bay
+        if (!bay?.id || b.bays[bay.id]) return b
+        const strips = { ...b.strips }
+        const stripOrder = []
+        for (const id of bay.stripOrder ?? []) {
+          const strip = action.strips?.[id]
+          if (strip && !strips[id]) {
+            strips[id] = { ...strip, currentBayId: bay.id }
+            stripOrder.push(id)
+          }
+        }
+        const bayOrder = [...b.bayOrder]
+        bayOrder.splice(clampIndex(action.index, bayOrder.length), 0, bay.id)
+        return { ...b, bays: { ...b.bays, [bay.id]: { ...bay, stripOrder } }, bayOrder, strips }
+      })
+    case 'restoreStrip':
+      return updateBoard(state, action.boardId, (b) => {
+        const strip = action.strip
+        if (!strip?.id || b.strips[strip.id]) return b
+        const bay = b.bays[strip.currentBayId]
+        if (!bay) return b
+        const stripOrder = [...bay.stripOrder]
+        stripOrder.splice(clampIndex(action.index, stripOrder.length), 0, strip.id)
+        return {
+          ...b,
+          bays: { ...b.bays, [bay.id]: { ...bay, stripOrder } },
+          strips: { ...b.strips, [strip.id]: strip },
+        }
+      })
+
     // ----- settings -----
     case 'setKeepScreenOn':
       if (state.settings.keepScreenOn === !!action.value) return state
@@ -292,6 +354,67 @@ export function reducer(state, action) {
     default:
       return state
   }
+}
+
+function clampIndex(index, length) {
+  const i = Number.isInteger(index) ? index : length
+  return Math.max(0, Math.min(i, length))
+}
+
+function uniqueName(name, taken) {
+  if (!taken.includes(name)) return name
+  let n = 2
+  while (taken.includes(`${name} (${n})`)) n += 1
+  return `${name} (${n})`
+}
+
+/**
+ * Rebuild a board from untrusted data (import file, undo buffer): keeps only
+ * known fields, drops bays/strips that don't hang together, and guarantees
+ * the stripOrder/currentBayId invariant. Returns null if unusable.
+ */
+export function sanitizeBoard(src, id) {
+  if (!src || typeof src !== 'object' || !id) return null
+  const bays = {}
+  const bayOrder = []
+  const seenBays = new Set()
+  for (const bayId of Array.isArray(src.bayOrder) ? src.bayOrder : []) {
+    const bay = src.bays?.[bayId]
+    if (typeof bayId !== 'string' || !bay || seenBays.has(bayId)) continue
+    seenBays.add(bayId)
+    const clean = { id: bayId, name: cleanName(bay.name) || `Bay ${bayOrder.length + 1}`, stripOrder: [] }
+    if (typeof bay.color === 'string' && bay.color) clean.color = bay.color
+    bays[bayId] = clean
+    bayOrder.push(bayId)
+  }
+  const strips = {}
+  for (const bayId of bayOrder) {
+    const order = Array.isArray(src.bays[bayId].stripOrder) ? src.bays[bayId].stripOrder : []
+    for (const stripId of order) {
+      const raw = src.strips?.[stripId]
+      if (typeof stripId !== 'string' || !raw || strips[stripId]) continue
+      let def
+      try {
+        def = getStripType(raw.type)
+      } catch {
+        continue
+      }
+      const strip = {
+        id: stripId,
+        type: def.key,
+        currentBayId: bayId,
+        createdAt: typeof raw.createdAt === 'string' ? raw.createdAt : now(),
+        lastMovedAt: typeof raw.lastMovedAt === 'string' ? raw.lastMovedAt : now(),
+      }
+      if (typeof raw.colorOverride === 'string' && raw.colorOverride) strip.colorOverride = raw.colorOverride
+      for (const f of def.fields) strip[f] = typeof raw[f] === 'string' ? raw[f] : ''
+      if (def.quickAdd && !strip[def.quickField]) continue
+      if (!def.quickAdd && !strip.callsign) continue
+      strips[stripId] = strip
+      bays[bayId].stripOrder.push(stripId)
+    }
+  }
+  return { id, name: cleanName(src.name), bayOrder, bays, strips }
 }
 
 // ---------------------------------------------------------------------------

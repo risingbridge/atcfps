@@ -1,23 +1,19 @@
 import { useDialogs } from '../hooks/useDialogs.js'
 import { actions } from '../state/store.js'
 import { useStore } from '../state/storeContext.js'
+import BoardMenu from './BoardMenu.jsx'
 import InlineEdit from './InlineEdit.jsx'
 import WakeLockToggle from './WakeLockToggle.jsx'
 
 export default function BoardBar() {
   const { state, dispatch } = useStore()
   const board = state.boards[state.activeBoardId]
-  const { confirm, prompt } = useDialogs()
+  const { prompt } = useDialogs()
 
   async function newBoard() {
     const name = await prompt('New board', `Board ${state.boardOrder.length + 1}`, { confirmLabel: 'Create' })
     if (name == null) return
     dispatch(actions.createBoard(name))
-  }
-  async function deleteBoard() {
-    const count = Object.keys(board.strips).length
-    const msg = `Delete board "${board.name}"${count ? ` and its ${count} strips` : ''}?`
-    if (await confirm(msg)) dispatch(actions.deleteBoard(board.id))
   }
 
   return (
@@ -45,9 +41,7 @@ export default function BoardBar() {
         <button className="btn" onClick={newBoard}>
           + New board
         </button>
-        <button className="btn btn-quiet" onClick={deleteBoard} title="Delete this board">
-          Delete
-        </button>
+        <BoardMenu />
       </div>
       <div className="board-bar-tools">
         <WakeLockToggle />

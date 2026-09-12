@@ -1,9 +1,10 @@
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useDeleteWithUndo } from '../hooks/useDeleteWithUndo.js'
-import { actions, shiftInOrder } from '../state/store.js'
+import { actions } from '../state/store.js'
 import { useActiveBoard } from '../state/storeContext.js'
+import BayMenu from './BayMenu.jsx'
 import InlineEdit from './InlineEdit.jsx'
 import NewStripMenu from './NewStripMenu.jsx'
 import SortableStrip from './SortableStrip.jsx'
@@ -15,15 +16,13 @@ export default function BayColumn({ bay, index, count, now }) {
   const { deleteStrip, deleteBay } = useDeleteWithUndo()
   const [editingId, setEditingId] = useState(null)
   const closeEditor = useCallback(() => setEditingId(null), [])
-
-  function move(delta) {
-    dispatch(actions.reorderBays(board.id, shiftInOrder(board.bayOrder, bay.id, delta)))
-  }
+  const nameRef = useRef(null)
 
   return (
     <section className="bay" style={bay.color ? { '--bay-accent': bay.color } : undefined}>
       <header className="bay-header">
         <InlineEdit
+          ref={nameRef}
           as="h2"
           className="bay-name"
           value={bay.name}
@@ -31,15 +30,13 @@ export default function BayColumn({ bay, index, count, now }) {
         />
         <span className="bay-count">{bay.stripOrder.length}</span>
         <div className="bay-tools">
-          <button className="btn btn-icon" onClick={() => move(-1)} disabled={index === 0} aria-label="Move bay left">
-            ◀
-          </button>
-          <button className="btn btn-icon" onClick={() => move(1)} disabled={index === count - 1} aria-label="Move bay right">
-            ▶
-          </button>
-          <button className="btn btn-icon btn-quiet" onClick={() => deleteBay(bay.id)} aria-label="Delete bay">
-            ✕
-          </button>
+          <BayMenu
+            bay={bay}
+            index={index}
+            count={count}
+            onDelete={() => deleteBay(bay.id)}
+            onRename={() => nameRef.current?.start()}
+          />
         </div>
       </header>
       <SortableContext id={bay.id} items={bay.stripOrder} strategy={verticalListSortingStrategy}>

@@ -83,6 +83,10 @@
   border-bottom: 1px solid color-mix(in srgb, var(--chrome) 40%, transparent);
 }
 
+.bay[style*='--bay-accent'] .bay-header {
+  background: color-mix(in srgb, var(--bay-accent) 14%, transparent);
+}
+
 .bay-name {
   margin: 0;
   font-size: 15px;

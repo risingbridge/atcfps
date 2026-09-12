@@ -52,9 +52,8 @@ Defaults I'll use unless told otherwise:
 
 ---
 
-> **Status (2026-09-12):** Phases 0–3 built and pushed. Remaining: real-iPad
-> verification of the wake lock and touch drag on the Pages URL, then Phase 4
-> items as wanted.
+> **Status (2026-09-12):** All phases (0–4) built. Remaining: real-iPad
+> verification of the wake lock and touch drag on the Pages URL.
 
 ## Phase 0 — Scaffold ✅
 
@@ -228,7 +227,7 @@ creation, and nothing destructive happens without a confirm.
 **Done when:** the board runs from GitHub Pages on the iPad, stays awake
 with the toggle on, and re-acquires after switching apps and back.
 
-## Phase 4 — Nice-to-haves, in the order I'd do them
+## Phase 4 — Nice-to-haves, in the order I'd do them ✅
 
 1. **Export/import board as JSON** — first because it's a backup for
    localStorage, which Safari can evict. Add `importBoard(board)` action;
@@ -237,13 +236,15 @@ with the toggle on, and re-acquires after switching apps and back.
 2. **Time-in-bay aging** — `lastMovedAt` is already tracked; a 1-minute
    `setInterval` tick and two CSS classes (`aging`, `stale`) at
    configurable thresholds.
-3. **Undo delete** — keep the last deleted strip/bay in component state
-   with a 10-second toast "Undo". Cheaper than a real undo stack and
-   covers the actual accident.
+3. **Undo delete** — keep the last deleted strip/bay/board in a toast with
+   an "Undo" action (8 s). Cheaper than a real undo stack and covers the
+   actual accident. Strip deletes no longer ask for confirmation (undo
+   replaces it); bay and board deletes keep the confirm *and* get undo.
 4. **Per-bay colour** — `Bay.color` already exists in the model; add a
    swatch picker to the bay header.
-5. **Drag-to-reorder bays** — replace the ◀ ▶ buttons with a horizontal
-   `SortableContext` over bay headers.
+5. **Drag-to-reorder bays** — horizontal `SortableContext` over bay
+   headers (header is the handle). The ◀ ▶ buttons moved into a per-bay
+   ⋯ menu as "Move left/right", alongside rename, colour and delete.
 6. **Print view** — `@media print` stylesheet, bays as page sections.
 7. **Offline / service worker** — `vite-plugin-pwa` precaching the app's
    own assets so the board opens on the iPad with no connectivity at

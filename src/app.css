@@ -171,70 +171,6 @@
   border-radius: 0 0 var(--radius) var(--radius);
 }
 
-.bay-new {
-  margin-left: var(--board-gutter);
-}
-
-/* gutter between adjacent bays; a drop zone while a strip is dragged */
-.bay-gap {
-  position: relative;
-  flex-shrink: 0;
-  align-self: stretch;
-  width: calc(var(--board-gutter) + 36px);
-  margin: 0 -18px;
-  z-index: 4;
-  pointer-events: none;
-}
-
-.bay-gap-line {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 18px;
-  width: var(--board-gutter);
-  border-radius: 3px;
-  transition: background 0.12s;
-}
-
-.bay-gap.is-armed .bay-gap-line {
-  background: color-mix(in srgb, var(--chrome) 30%, transparent);
-}
-
-.bay-gap.is-over .bay-gap-line {
-  background: var(--chrome-strong);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--chrome-strong) 40%, transparent);
-}
-
-/* a strip spanning into the bay on its right: drawn over the gutter and the right column */
-.strip-span {
-  position: relative;
-  z-index: 2;
-  width: calc(200% + var(--board-gutter) + 2 * var(--s-2));
-}
-
-.strip-span-placeholder {
-  flex-shrink: 0;
-  border: 1px dashed color-mix(in srgb, var(--chrome) 35%, transparent);
-  border-radius: 2px;
-}
-
-.bay-new {
-  background: transparent;
-  border: 1px dashed color-mix(in srgb, var(--chrome) 60%, transparent);
-  border-top-width: 1px;
-}
-
-.new-bay {
-  display: flex;
-  gap: var(--s-2);
-  padding: var(--s-3);
-}
-
-.new-bay .input {
-  flex: 1;
-  min-width: 0;
-}
-
 /* ---------- strips ---------- */
 
 /*
@@ -1366,7 +1302,6 @@ textarea.input {
   .board-bar-tools,
   .bay-tools,
   .bay-footer,
-  .bay-new,
   .board-empty,
   .toast,
   dialog {

@@ -3,7 +3,6 @@ import './app.css'
 import BayColumn from './components/BayColumn.jsx'
 import BayGap from './components/BayGap.jsx'
 import BoardBar from './components/BoardBar.jsx'
-import NewBayForm from './components/NewBayForm.jsx'
 import StripDndContext from './components/StripDndContext.jsx'
 import { useNow } from './hooks/useNow.js'
 import { useSpanAlignment } from './hooks/useSpanAlignment.js'
@@ -21,7 +20,9 @@ export default function App() {
     <div className="app">
       <BoardBar />
       <main className="board" ref={boardRef}>
-        {board.bayOrder.length === 0 && <p className="board-empty">Add a bay to get started.</p>}
+        {board.bayOrder.length === 0 && (
+          <p className="board-empty">No bays yet — use the ⋯ menu to add one.</p>
+        )}
         <SpanLayoutContext.Provider value={spanLayout}>
           <StripDndContext onDraggingChange={onDraggingChange}>
             {board.bayOrder.map((id, i) => (
@@ -32,9 +33,6 @@ export default function App() {
             ))}
           </StripDndContext>
         </SpanLayoutContext.Provider>
-        <div className="bay bay-new">
-          <NewBayForm />
-        </div>
       </main>
     </div>
   )

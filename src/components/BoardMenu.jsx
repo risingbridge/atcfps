@@ -22,6 +22,11 @@ export default function BoardMenu() {
     if (name != null) dispatch(actions.createBoard(name))
   }
 
+  async function newBay() {
+    const name = await prompt('New bay', `Bay ${board.bayOrder.length + 1}`, { confirmLabel: 'Add' })
+    if (name != null) dispatch(actions.addBay(board.id, name))
+  }
+
   async function rename() {
     const name = await prompt('Rename board', board.name, { confirmLabel: 'Rename' })
     if (name != null) dispatch(actions.renameBoard(board.id, name))
@@ -54,6 +59,8 @@ export default function BoardMenu() {
   }
 
   const items = [
+    { label: 'New bay…', onSelect: newBay },
+    'separator',
     { label: 'New board…', onSelect: newBoard },
     { label: 'Rename board…', onSelect: rename },
     'separator',

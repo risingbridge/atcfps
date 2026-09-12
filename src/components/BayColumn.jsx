@@ -1,11 +1,14 @@
+import { useDroppable } from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { actions, shiftInOrder } from '../state/store.js'
 import { useActiveBoard } from '../state/storeContext.js'
 import InlineEdit from './InlineEdit.jsx'
 import NewStripMenu from './NewStripMenu.jsx'
-import Strip from './Strip.jsx'
+import SortableStrip from './SortableStrip.jsx'
 
 export default function BayColumn({ bay, index, count }) {
   const { board, dispatch } = useActiveBoard()
+  const { setNodeRef, isOver } = useDroppable({ id: bay.id, data: { type: 'bay' } })
 
   function move(delta) {
     dispatch(actions.reorderBays(board.id, shiftInOrder(board.bayOrder, bay.id, delta)))
@@ -38,11 +41,18 @@ export default function BayColumn({ bay, index, count }) {
           </button>
         </div>
       </header>
-      <div className="bay-strips">
-        {bay.stripOrder.map((id) => (
-          <Strip key={id} strip={board.strips[id]} onDelete={() => dispatch(actions.deleteStrip(board.id, id))} />
-        ))}
-      </div>
+      <SortableContext id={bay.id} items={bay.stripOrder} strategy={verticalListSortingStrategy}>
+        <div ref={setNodeRef} className={`bay-strips ${isOver ? 'is-over' : ''}`}>
+          {bay.stripOrder.map((id) => (
+            <SortableStrip
+              key={id}
+              strip={board.strips[id]}
+              bayId={bay.id}
+              onDelete={() => dispatch(actions.deleteStrip(board.id, id))}
+            />
+          ))}
+        </div>
+      </SortableContext>
       <footer className="bay-footer">
         <NewStripMenu bayId={bay.id} />
       </footer>

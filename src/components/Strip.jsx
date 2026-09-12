@@ -33,11 +33,18 @@ function QuickBody({ strip, def }) {
   )
 }
 
-export default function Strip({ strip, onClick, onDelete }) {
+export default function Strip({ strip, onClick, onDelete, innerRef, style, className = '', dragProps }) {
   const def = STRIP_TYPES[strip.type]
-  const style = strip.colorOverride ? { '--strip-accent': strip.colorOverride } : undefined
+  const merged = strip.colorOverride ? { ...style, '--strip-accent': strip.colorOverride } : style
   return (
-    <div className="strip" data-type={strip.type} style={style} onClick={onClick}>
+    <div
+      ref={innerRef}
+      className={`strip ${className}`}
+      data-type={strip.type}
+      style={merged}
+      onClick={onClick}
+      {...dragProps}
+    >
       <span className="strip-icon" aria-label={def.label} title={def.label}>
         {def.icon}
       </span>

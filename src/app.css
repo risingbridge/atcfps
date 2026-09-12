@@ -149,9 +149,24 @@
   border-left: 6px solid var(--strip-accent);
   border-radius: 2px;
   font-family: var(--font-data);
-  touch-action: none;
+  touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
+  cursor: grab;
+}
+
+.strip-placeholder {
+  opacity: 0.3;
+}
+
+.strip-overlay {
+  cursor: grabbing;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+  transform: rotate(-0.6deg);
+}
+
+.bay-strips.is-over {
+  background: color-mix(in srgb, var(--chrome) 12%, transparent);
 }
 
 .strip[data-type='info'] {

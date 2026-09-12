@@ -50,3 +50,10 @@ export function getStripType(type) {
   if (!def) throw new Error(`Unknown strip type: ${type}`)
   return def
 }
+
+/** Short human label for a strip of any type (callsign / vehicle ID / message). */
+export function stripLabel(strip) {
+  const def = STRIP_TYPES[strip.type]
+  const value = def?.quickAdd ? strip[def.quickField] : strip.callsign
+  return value || strip.id
+}

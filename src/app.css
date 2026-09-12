@@ -56,8 +56,9 @@
 }
 
 .board-empty {
-  align-self: center;
-  margin: 0 var(--s-3);
+  align-self: flex-start;
+  margin: 0;
+  padding: var(--s-3) var(--s-2);
   color: var(--chrome-text-muted);
 }
 
@@ -152,7 +153,7 @@
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
-  cursor: grab;
+  cursor: pointer;
 }
 
 .strip-placeholder {
@@ -508,10 +509,57 @@ textarea.input {
   padding: var(--s-5);
 }
 
+.modal-sm {
+  width: min(420px, 92vw);
+}
+
 .modal-title {
   margin: 0 0 var(--s-4);
   font-size: 16px;
   font-weight: 500;
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-3);
+}
+
+.modal-title-meta {
+  font-family: var(--font-data);
+  font-size: 13px;
+  color: var(--chrome-text-muted);
+}
+
+.modal-text {
+  margin: 0;
+  line-height: 1.5;
+}
+
+
+.swatches {
+  display: flex;
+  gap: var(--s-2);
+}
+
+.swatch {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: var(--swatch);
+  cursor: pointer;
+}
+
+.swatch-none {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--chrome) 60%, transparent);
+  color: var(--chrome-text-muted);
+  font-size: 11px;
+}
+
+.swatch.is-selected {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px var(--bg-bay), 0 0 0 3px var(--chrome-strong);
 }
 
 .field-grid {
@@ -529,6 +577,10 @@ textarea.input {
 
 .field-wide {
   grid-column: 1 / -1;
+}
+
+.field-grid.field-grid-1 {
+  grid-template-columns: 1fr;
 }
 
 .field-label {

@@ -1,3 +1,4 @@
+import { useDialogs } from '../hooks/useDialogs.js'
 import { actions } from '../state/store.js'
 import { useStore } from '../state/storeContext.js'
 import InlineEdit from './InlineEdit.jsx'
@@ -5,16 +6,17 @@ import InlineEdit from './InlineEdit.jsx'
 export default function BoardBar() {
   const { state, dispatch } = useStore()
   const board = state.boards[state.activeBoardId]
+  const { confirm, prompt } = useDialogs()
 
-  function newBoard() {
-    const name = window.prompt('Board name', `Board ${state.boardOrder.length + 1}`)
+  async function newBoard() {
+    const name = await prompt('New board', `Board ${state.boardOrder.length + 1}`, { confirmLabel: 'Create' })
     if (name == null) return
     dispatch(actions.createBoard(name))
   }
-  function deleteBoard() {
+  async function deleteBoard() {
     const count = Object.keys(board.strips).length
     const msg = `Delete board "${board.name}"${count ? ` and its ${count} strips` : ''}?`
-    if (window.confirm(msg)) dispatch(actions.deleteBoard(board.id))
+    if (await confirm(msg)) dispatch(actions.deleteBoard(board.id))
   }
 
   return (

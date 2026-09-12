@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { FLIGHT_FIELDS } from '../lib/stripTypes.js'
+import ColorPicker from './ColorPicker.jsx'
 
 const LABELS = {
   callsign: 'Callsign',
@@ -15,13 +16,19 @@ function blank() {
   return Object.fromEntries(FLIGHT_FIELDS.map((f) => [f, '']))
 }
 
+function pickFields(src) {
+  if (!src) return {}
+  return Object.fromEntries(FLIGHT_FIELDS.filter((f) => src[f] != null).map((f) => [f, src[f]]))
+}
+
 /**
  * Create/edit form for flight strips. Mount it to open; it calls onClose when
  * dismissed (Esc, backdrop, Cancel) and onSubmit(fields) on save.
  */
 export default function FlightStripModal({ initial, onSubmit, onClose, onDelete }) {
   const ref = useRef(null)
-  const [fields, setFields] = useState(() => ({ ...blank(), ...(initial ?? {}) }))
+  const [fields, setFields] = useState(() => ({ ...blank(), ...pickFields(initial) }))
+  const [color, setColor] = useState(initial?.colorOverride ?? '')
   const editing = !!initial
 
   useEffect(() => {
@@ -41,7 +48,7 @@ export default function FlightStripModal({ initial, onSubmit, onClose, onDelete 
     e.preventDefault()
     const trimmed = Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, v.trim()]))
     if (!trimmed.callsign) return
-    onSubmit(trimmed)
+    onSubmit(editing ? { ...trimmed, colorOverride: color || undefined } : trimmed)
     ref.current.close()
   }
 
@@ -74,6 +81,11 @@ export default function FlightStripModal({ initial, onSubmit, onClose, onDelete 
             <span className="field-label">{LABELS.remarks}</span>
             <textarea className="input" rows={2} value={fields.remarks} onChange={set('remarks')} />
           </label>
+          {editing && (
+            <div className="field-wide">
+              <ColorPicker value={color} onChange={setColor} />
+            </div>
+          )}
         </div>
         <div className="modal-actions">
           {editing && onDelete && (

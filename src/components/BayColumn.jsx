@@ -1,22 +1,34 @@
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { useCallback, useState } from 'react'
+import { useDialogs } from '../hooks/useDialogs.js'
+import { stripLabel } from '../lib/stripTypes.js'
 import { actions, shiftInOrder } from '../state/store.js'
 import { useActiveBoard } from '../state/storeContext.js'
 import InlineEdit from './InlineEdit.jsx'
 import NewStripMenu from './NewStripMenu.jsx'
 import SortableStrip from './SortableStrip.jsx'
+import StripEditor from './StripEditor.jsx'
 
 export default function BayColumn({ bay, index, count }) {
   const { board, dispatch } = useActiveBoard()
   const { setNodeRef, isOver } = useDroppable({ id: bay.id, data: { type: 'bay' } })
+  const { confirm } = useDialogs()
+  const [editingId, setEditingId] = useState(null)
+  const closeEditor = useCallback(() => setEditingId(null), [])
 
   function move(delta) {
     dispatch(actions.reorderBays(board.id, shiftInOrder(board.bayOrder, bay.id, delta)))
   }
-  function remove() {
+  async function remove() {
     const n = bay.stripOrder.length
-    if (n && !window.confirm(`Delete bay "${bay.name}" and its ${n} strip${n === 1 ? '' : 's'}?`)) return
+    if (n && !(await confirm(`Delete bay "${bay.name}" and its ${n} strip${n === 1 ? '' : 's'}?`))) return
     dispatch(actions.deleteBay(board.id, bay.id))
+  }
+  async function removeStrip(id) {
+    if (await confirm(`Delete strip "${stripLabel(board.strips[id])}"?`)) {
+      dispatch(actions.deleteStrip(board.id, id))
+    }
   }
 
   return (
@@ -48,7 +60,8 @@ export default function BayColumn({ bay, index, count }) {
               key={id}
               strip={board.strips[id]}
               bayId={bay.id}
-              onDelete={() => dispatch(actions.deleteStrip(board.id, id))}
+              onClick={() => setEditingId(id)}
+              onDelete={() => removeStrip(id)}
             />
           ))}
         </div>
@@ -56,6 +69,9 @@ export default function BayColumn({ bay, index, count }) {
       <footer className="bay-footer">
         <NewStripMenu bayId={bay.id} />
       </footer>
+      {editingId && board.strips[editingId] && (
+        <StripEditor strip={board.strips[editingId]} onClose={closeEditor} />
+      )}
     </section>
   )
 }

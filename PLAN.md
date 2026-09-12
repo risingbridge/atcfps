@@ -17,11 +17,12 @@ How the plan enforces it:
 
 - Fonts and every dependency are bundled by Vite — nothing loaded from a
   CDN at runtime.
-- `index.html` carries a Content-Security-Policy meta tag with
-  `default-src 'self'; connect-src 'none'`, so an accidental outbound
-  request (a stray `fetch`, a font `@import`, a future dependency phoning
-  home) is blocked by the browser and shows up in the console instead of
-  silently leaking.
+- The production build carries a Content-Security-Policy meta tag with
+  `default-src 'self'; connect-src 'none'` (injected by a build-only Vite
+  plugin, since the dev server needs a WebSocket for HMR), so an accidental
+  outbound request (a stray `fetch`, a font `@import`, a future dependency
+  phoning home) is blocked by the browser and shows up in the console
+  instead of silently leaking.
 - Export/import (Phase 4) is a local file download / file picker only —
   no share links, no paste services.
 - A service worker for full offline use is an optional Phase 4 item; it
@@ -51,10 +52,14 @@ Defaults I'll use unless told otherwise:
 
 ---
 
-## Phase 0 — Scaffold
+> **Status (2026-09-12):** Phases 0–3 built and pushed. Remaining: real-iPad
+> verification of the wake lock and touch drag on the Pages URL, then Phase 4
+> items as wanted.
+
+## Phase 0 — Scaffold ✅
 
 1. `npm create vite@latest . -- --template react` (JS template), keep the
-   template's ESLint config.
+   template's lint config (the current template ships oxlint).
 2. Add deps: `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`,
    `@fontsource/ibm-plex-mono`, `@fontsource/ibm-plex-sans`. Dev:
    `vitest`.
@@ -69,7 +74,7 @@ Defaults I'll use unless told otherwise:
 
 **Done when:** `npm run dev` shows a dark page with the fonts loaded.
 
-## Phase 1a — State layer (no UI)
+## Phase 1a — State layer (no UI) ✅
 
 Build the data model and reducer first, test it, then hang UI off it.
 This isolates the trickiest pure logic (`moveStrip`) from DnD debugging.
@@ -105,7 +110,7 @@ This isolates the trickiest pure logic (`moveStrip`) from DnD debugging.
 **Done when:** `npx vitest run` is green; `App.jsx` can render
 `JSON.stringify(state)` and it survives refresh.
 
-## Phase 1b — Static UI (render + create, no drag yet)
+## Phase 1b — Static UI (render + create, no drag yet) ✅
 
 1. `BoardBar.jsx` — board `<select>`, "+ New board", rename (inline on
    double-click or a small ✎ button), delete, wake-lock toggle slot
@@ -136,7 +141,7 @@ This isolates the trickiest pure logic (`moveStrip`) from DnD debugging.
 still there. Visually check against spec §5 — this is the moment to get
 the strip proportions right, before DnD makes layout changes costlier.
 
-## Phase 1c — Drag-and-drop
+## Phase 1c — Drag-and-drop ✅
 
 The multi-container sortable pattern from dnd-kit:
 
@@ -171,7 +176,7 @@ The multi-container sortable pattern from dnd-kit:
 **Done when:** reorder within a bay, move to another bay, move into an
 empty bay, and cancel with Esc all behave, on both mouse and iPad.
 
-## Phase 2 — Editing & confirmation
+## Phase 2 — Editing & confirmation ✅
 
 1. `ConfirmDialog.jsx` — `<dialog>` with message + Cancel/Confirm; expose
    as `useConfirm()` returning a promise so callers read
@@ -192,7 +197,7 @@ empty bay, and cancel with Esc all behave, on both mouse and iPad.
 **Done when:** every field of every strip type can be changed after
 creation, and nothing destructive happens without a confirm.
 
-## Phase 3 — Wake lock & iPad deployment
+## Phase 3 — Wake lock & iPad deployment ✅ (iPad check pending)
 
 1. `src/hooks/useWakeLock.js`:
    ```

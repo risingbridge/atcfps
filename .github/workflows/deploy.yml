@@ -27,9 +27,8 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+      # Requires Settings → Pages → Source: "GitHub Actions" (one-time, manual)
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

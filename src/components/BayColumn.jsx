@@ -1,10 +1,12 @@
 import { useDroppable } from '@dnd-kit/core'
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { useCallback, useRef, useState } from 'react'
 import { useDeleteWithUndo } from '../hooks/useDeleteWithUndo.js'
 import { actions } from '../state/store.js'
 import { useActiveBoard } from '../state/storeContext.js'
 import BayMenu from './BayMenu.jsx'
+import { baySortId } from '../lib/dnd.js'
 import InlineEdit from './InlineEdit.jsx'
 import NewStripMenu from './NewStripMenu.jsx'
 import SortableStrip from './SortableStrip.jsx'
@@ -13,14 +15,34 @@ import StripEditor from './StripEditor.jsx'
 export default function BayColumn({ bay, index, count, now }) {
   const { board, dispatch } = useActiveBoard()
   const { setNodeRef, isOver } = useDroppable({ id: bay.id, data: { type: 'bay' } })
+  const {
+    setNodeRef: setBayRef,
+    setActivatorNodeRef,
+    attributes: bayAttributes,
+    listeners: bayListeners,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: baySortId(bay.id), data: { type: 'baySort', bayId: bay.id } })
+  const sortStyle = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+    ...(bay.color ? { '--bay-accent': bay.color } : {}),
+  }
   const { deleteStrip, deleteBay } = useDeleteWithUndo()
   const [editingId, setEditingId] = useState(null)
   const closeEditor = useCallback(() => setEditingId(null), [])
   const nameRef = useRef(null)
 
   return (
-    <section className="bay" style={bay.color ? { '--bay-accent': bay.color } : undefined}>
-      <header className="bay-header">
+    <section ref={setBayRef} className={`bay ${isDragging ? 'is-dragging' : ''}`} style={sortStyle}>
+      <header
+        className="bay-header"
+        ref={setActivatorNodeRef}
+        {...bayAttributes}
+        {...bayListeners}
+        title="Drag to reorder bays"
+      >
         <InlineEdit
           ref={nameRef}
           as="h2"

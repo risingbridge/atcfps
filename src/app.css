@@ -83,6 +83,19 @@
   border-bottom: 1px solid color-mix(in srgb, var(--chrome) 40%, transparent);
 }
 
+.bay-header {
+  cursor: grab;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.bay.is-dragging {
+  z-index: 10;
+  opacity: 0.9;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+}
+
 .bay[style*='--bay-accent'] .bay-header {
   background: color-mix(in srgb, var(--bay-accent) 14%, transparent);
 }

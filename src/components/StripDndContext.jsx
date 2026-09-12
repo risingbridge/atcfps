@@ -4,23 +4,28 @@ import {
   KeyboardSensor,
   MouseSensor,
   TouchSensor,
+  closestCenter,
   closestCorners,
   pointerWithin,
   rectIntersection,
   useSensor,
   useSensors,
 } from '@dnd-kit/core'
-import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
+import { SortableContext, arrayMove, horizontalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { useRef, useState } from 'react'
+import { baySortId } from '../lib/dnd.js'
 import { actions } from '../state/store.js'
 import { useActiveBoard } from '../state/storeContext.js'
 import Strip from './Strip.jsx'
 
 /**
- * Multi-container sortable: cross-bay moves are applied to the store during
- * dragOver (so the target bay opens a gap), the final index on dragEnd.
- * lastMovedAt is stamped only when the strip ends up in a different bay
- * than it started in.
+ * Two drag layers in one DndContext:
+ *  - strips: multi-container sortable. Cross-bay moves are applied to the
+ *    store during dragOver (so the target bay opens a gap), the final index
+ *    on dragEnd. lastMovedAt is stamped only when the strip ends up in a
+ *    different bay than it started in.
+ *  - bays: a horizontal sortable over the bay headers (ids prefixed so they
+ *    don't collide with the bays' strip-droppable ids).
  */
 export default function StripDndContext({ children }) {
   const { board, dispatch } = useActiveBoard()
@@ -51,6 +56,7 @@ export default function StripDndContext({ children }) {
   }
 
   function onDragStart({ active }) {
+    if (active.data.current?.type === 'baySort') return
     const strip = board.strips[active.id]
     if (!strip) return
     setActiveId(active.id)
@@ -58,6 +64,7 @@ export default function StripDndContext({ children }) {
   }
 
   function onDragOver({ active, over }) {
+    if (active.data.current?.type === 'baySort') return
     const strip = board.strips[active.id]
     const toBay = bayOf(over)
     if (!strip || !toBay || toBay === strip.currentBayId) return
@@ -65,6 +72,14 @@ export default function StripDndContext({ children }) {
   }
 
   function onDragEnd({ active, over }) {
+    if (active.data.current?.type === 'baySort') {
+      const from = active.data.current.bayId
+      const to = over?.data.current?.type === 'baySort' ? over.data.current.bayId : null
+      if (to && to !== from) {
+        dispatch(actions.reorderBays(board.id, arrayMove(board.bayOrder, board.bayOrder.indexOf(from), board.bayOrder.indexOf(to))))
+      }
+      return
+    }
     const strip = board.strips[active.id]
     const toBay = bayOf(over)
     if (strip && toBay) {
@@ -84,6 +99,7 @@ export default function StripDndContext({ children }) {
   }
 
   function onDragCancel({ active }) {
+    if (active.data.current?.type === 'baySort') return
     if (origin.current) {
       dispatch(actions.moveStrip(board.id, active.id, origin.current.bayId, origin.current.index, { markMoved: false }))
     }
@@ -106,7 +122,9 @@ export default function StripDndContext({ children }) {
       onDragEnd={onDragEnd}
       onDragCancel={onDragCancel}
     >
-      {children}
+      <SortableContext items={board.bayOrder.map(baySortId)} strategy={horizontalListSortingStrategy}>
+        {children}
+      </SortableContext>
       <DragOverlay dropAnimation={null}>
         {activeStrip ? <Strip strip={activeStrip} className="strip-overlay" /> : null}
       </DragOverlay>
@@ -120,6 +138,11 @@ export default function StripDndContext({ children }) {
  * resolved even when the pointer leaves every droppable.
  */
 function collisionDetection(args) {
+  const isBaySort = (c) => c.data?.current?.type === 'baySort'
+  if (args.active.data.current?.type === 'baySort') {
+    return closestCenter({ ...args, droppableContainers: args.droppableContainers.filter(isBaySort) })
+  }
+  args = { ...args, droppableContainers: args.droppableContainers.filter((c) => !isBaySort(c)) }
   const within = pointerWithin(args)
   const hits = within.length ? within : rectIntersection(args)
   const strip = hits.find((h) => h.data?.droppableContainer?.data?.current?.type === 'strip')

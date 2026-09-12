@@ -10,7 +10,7 @@ function AgeCell({ minutes }) {
   )
 }
 
-function FlightBody({ strip, minutes }) {
+function FlightBody({ strip, minutes, onEditLevel }) {
   return (
     <>
       <div className="strip-cells strip-row">
@@ -20,11 +20,22 @@ function FlightBody({ strip, minutes }) {
       </div>
       <div className="strip-cells strip-row strip-row-2">
         <span className="cell cell-route">{strip.route}</span>
-        <span className="cell cell-levels cell-end" title="Requested → cleared level">
+        <button
+          type="button"
+          className="cell cell-levels cell-end cell-tap"
+          title="Tap to set cleared level"
+          aria-label={`Cleared level ${strip.clearedAltitude || 'not set'}; tap to change`}
+          onClick={(e) => {
+            e.stopPropagation()
+            onEditLevel?.(e.currentTarget.getBoundingClientRect())
+          }}
+        >
           {strip.requestedAltitude && <span className="level-req">{strip.requestedAltitude}</span>}
-          {strip.requestedAltitude && strip.clearedAltitude && <span className="level-arrow">→</span>}
-          {strip.clearedAltitude && <span className="level-clr">{strip.clearedAltitude}</span>}
-        </span>
+          {strip.requestedAltitude && <span className="level-arrow">→</span>}
+          <span className={`level-clr ${strip.clearedAltitude ? '' : 'is-empty'}`}>
+            {strip.clearedAltitude || '– – –'}
+          </span>
+        </button>
         <AgeCell minutes={minutes} />
       </div>
       {strip.remarks && <div className="strip-remarks">{strip.remarks}</div>}
@@ -47,7 +58,7 @@ function QuickBody({ strip, def, minutes }) {
   )
 }
 
-export default function Strip({ strip, now, onClick, innerRef, style, className = '', dragProps }) {
+export default function Strip({ strip, now, onClick, onEditLevel, innerRef, style, className = '', dragProps }) {
   const def = STRIP_TYPES[strip.type]
   const merged = strip.colorOverride ? { ...style, '--strip-accent': strip.colorOverride } : style
   const minutes = now != null ? minutesSince(strip.lastMovedAt, now) : null
@@ -70,7 +81,7 @@ export default function Strip({ strip, now, onClick, innerRef, style, className 
       </span>
       <div className="strip-body">
         {strip.type === 'flight' ? (
-          <FlightBody strip={strip} minutes={minutes} />
+          <FlightBody strip={strip} minutes={minutes} onEditLevel={onEditLevel} />
         ) : (
           <QuickBody strip={strip} def={def} minutes={minutes} />
         )}

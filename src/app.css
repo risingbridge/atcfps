@@ -342,8 +342,37 @@
 
 .cell-levels {
   gap: 6px;
-  min-width: 72px;
+  min-width: 84px;
   justify-content: flex-end;
+}
+
+/* tappable cell: looks like a cell, hits like a 44px button */
+.cell-tap {
+  position: relative;
+  background: transparent;
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 0;
+  border-radius: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cell-tap::after {
+  content: '';
+  position: absolute;
+  inset: -8px 0;
+}
+
+.cell-tap:active {
+  background: color-mix(in srgb, var(--strip-fg) 14%, transparent);
+}
+
+.level-clr.is-empty {
+  color: var(--strip-fg-muted);
+  letter-spacing: -0.05em;
 }
 
 .cell-levels:empty::before {
@@ -848,6 +877,85 @@ textarea.input {
 .segment[data-kind='other'] {
   --kind-bg: var(--strip-other-bg);
   --kind-fg: var(--strip-other-fg);
+}
+
+/* ---------- level picker ---------- */
+
+.level-picker {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  padding: var(--s-3);
+  background: var(--bg-bay);
+  color: var(--chrome-text);
+  border: 1px solid var(--chrome);
+  border-radius: 6px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+}
+
+.level-picker::backdrop {
+  display: none;
+}
+
+.level-picker-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin-bottom: var(--s-3);
+}
+
+.segmented-sm {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.segmented-sm .segment {
+  font-size: 14px;
+}
+
+.level-picker-value {
+  font-family: var(--font-data);
+  font-size: 24px;
+  font-weight: 600;
+  min-width: 84px;
+  text-align: right;
+}
+
+.level-picker-steps {
+  display: flex;
+  gap: var(--s-2);
+  margin-bottom: var(--s-3);
+}
+
+.btn-step {
+  flex: 1;
+  font-family: var(--font-data);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.level-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  margin-bottom: var(--s-3);
+}
+
+.btn-level {
+  padding: 4px 6px;
+  font-family: var(--font-data);
+  font-size: 14px;
+}
+
+.btn-level.is-selected {
+  background: var(--chrome);
+  border-color: var(--chrome);
+  color: #fff;
+}
+
+.level-picker-foot {
+  display: flex;
+  gap: var(--s-2);
 }
 
 /* ---------- modal ---------- */

@@ -18,7 +18,9 @@ build ships a Content-Security-Policy that blocks any outbound request.
   other traffic black, vehicles red, info amber
 - iPad-first: three bays across in landscape, 44 px+ touch targets
 - Drag strips between and within bays; long-press to lift on touch
-- Tap a strip to edit or delete; highlight stripe; time-in-bay ageing
+- Tap a strip to edit or remove; tap the level cell to set the cleared
+  level right on the strip (FL / altitude picker); highlight stripe;
+  time-in-bay ageing
 - Removed strips go to a per-board archive (created / removed times, full
   details, restore to any bay); undo for removes; confirm on bay/board delete
 - Export/import boards as JSON (⋯ menu) — your backup, since browsers can

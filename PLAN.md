@@ -52,8 +52,7 @@ Defaults I'll use unless told otherwise:
 
 ---
 
-> **Status (2026-09-12):** Phases 0–6 built. 0–5 deployed; 6 verified in
-> Chromium, pending push.
+> **Status (2026-09-12):** Phases 0–7 built; 0–6 deployed.
 
 ## Phase 0 — Scaffold ✅
 
@@ -445,6 +444,29 @@ Calls I'll make unless told otherwise:
 **Done when:** every removed strip can be found in its board's archive with
 label, created and archived times; a tap shows the full strip; restore puts
 it back on the board; the archive survives reload and export/import.
+
+---
+
+## Phase 7 — Edit on the strip (cleared level) ✅
+
+Decided with the user: **cleared level only**, picker offers **flight
+levels and altitudes**, **tap the cell** opens it (tap elsewhere on the
+strip still opens the full editor).
+
+- `LevelPicker.jsx`: a popover (top layer via the Popover API) anchored
+  to the tapped cell. FL / ALT mode toggle; big current value; −10 / +10
+  steppers (ALT also ±5); a grid of common values (FL 050–410, ALT
+  010–100); Clear; Done. **Every tap writes through `updateStrip`
+  immediately** so the strip updates live — Done just closes.
+- `lib/levels.js`: parse (`FL350`, `A020`, `2000`, `350`) → `{ mode,
+  hundreds }` and format back (`FL350` / `A020`); tests.
+- `Strip.jsx`: the levels cell becomes a button with an enlarged hit area
+  (the row is 30 px; a pseudo-element pads it to ≥ 44 px); `onEditLevel`
+  bubbles to `BayColumn`, which owns the picker state like it owns the
+  editor state.
+- Closes on outside tap, Esc, or Done; stays open while stepping.
+- Empty cleared level shows a dashed placeholder so the tap target is
+  discoverable.
 
 ---
 

@@ -8,6 +8,7 @@ import { useActiveBoard } from '../state/storeContext.js'
 import BayMenu from './BayMenu.jsx'
 import { baySortId } from '../lib/dnd.js'
 import InlineEdit from './InlineEdit.jsx'
+import LevelPicker from './LevelPicker.jsx'
 import NewStripMenu from './NewStripMenu.jsx'
 import SortableStrip from './SortableStrip.jsx'
 import StripEditor from './StripEditor.jsx'
@@ -32,6 +33,8 @@ export default function BayColumn({ bay, index, count, now }) {
   const { deleteBay } = useDeleteWithUndo()
   const [editingId, setEditingId] = useState(null)
   const closeEditor = useCallback(() => setEditingId(null), [])
+  const [levelEdit, setLevelEdit] = useState(null) // { stripId, anchor }
+  const closeLevel = useCallback(() => setLevelEdit(null), [])
   const nameRef = useRef(null)
 
   return (
@@ -70,6 +73,7 @@ export default function BayColumn({ bay, index, count, now }) {
               now={now}
               bayId={bay.id}
               onClick={() => setEditingId(id)}
+              onEditLevel={(anchor) => setLevelEdit({ stripId: id, anchor })}
             />
           ))}
         </div>
@@ -79,6 +83,14 @@ export default function BayColumn({ bay, index, count, now }) {
       </footer>
       {editingId && board.strips[editingId] && (
         <StripEditor strip={board.strips[editingId]} onClose={closeEditor} />
+      )}
+      {levelEdit && board.strips[levelEdit.stripId] && (
+        <LevelPicker
+          value={board.strips[levelEdit.stripId].clearedAltitude}
+          anchor={levelEdit.anchor}
+          onChange={(clearedAltitude) => dispatch(actions.updateStrip(board.id, levelEdit.stripId, { clearedAltitude }))}
+          onClose={closeLevel}
+        />
       )}
     </section>
   )

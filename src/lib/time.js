@@ -31,3 +31,16 @@ export function ageClass(min) {
   if (min >= AGING_MINUTES) return 'is-aging'
   return ''
 }
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+/** "1432Z" if the timestamp is today (UTC), else "11 Sep 1432Z". */
+export function formatZuluDate(iso, now = Date.now()) {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '----Z'
+  const n = new Date(now)
+  const sameDay =
+    d.getUTCFullYear() === n.getUTCFullYear() && d.getUTCMonth() === n.getUTCMonth() && d.getUTCDate() === n.getUTCDate()
+  const time = formatZulu(iso)
+  return sameDay ? time : `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${time}`
+}

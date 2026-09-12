@@ -17,7 +17,7 @@ export function useDeleteWithUndo() {
       if (!strip) return
       const index = board.bays[strip.currentBayId]?.stripOrder.indexOf(stripId) ?? 0
       dispatch(actions.deleteStrip(board.id, stripId))
-      showToast(`Deleted "${stripLabel(strip)}"`, {
+      showToast(`Removed "${stripLabel(strip)}" to archive`, {
         actionLabel: 'Undo',
         onAction: () => dispatch(actions.restoreStrip(board.id, strip, index)),
       })
@@ -30,11 +30,11 @@ export function useDeleteWithUndo() {
       const bay = board.bays[bayId]
       if (!bay) return false
       const n = bay.stripOrder.length
-      if (n && !(await confirm(`Delete bay "${bay.name}" and its ${n} strip${n === 1 ? '' : 's'}?`))) return false
+      if (n && !(await confirm(`Delete bay "${bay.name}"? Its ${n} strip${n === 1 ? '' : 's'} will be archived.`))) return false
       const index = board.bayOrder.indexOf(bayId)
       const strips = Object.fromEntries(bay.stripOrder.map((id) => [id, board.strips[id]]))
       dispatch(actions.deleteBay(board.id, bayId))
-      showToast(`Deleted bay "${bay.name}"${n ? ` (${n} strip${n === 1 ? '' : 's'})` : ''}`, {
+      showToast(`Deleted bay "${bay.name}"${n ? ` (${n} strip${n === 1 ? '' : 's'} archived)` : ''}`, {
         actionLabel: 'Undo',
         onAction: () => dispatch(actions.restoreBay(board.id, bay, strips, index)),
       })

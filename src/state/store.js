@@ -35,11 +35,50 @@ import { FLIGHT_FIELDS, getStripType, normalizeFlightKind } from '../lib/stripTy
  */
 
 const DEFAULT_BOARD_NAME = 'Board 1'
+/** Newest N removed strips kept per board. */
+export const ARCHIVE_LIMIT = 500
 
 const now = () => new Date().toISOString()
 
 function newBoard(id, name) {
-  return { id, name, bayOrder: [], bays: {}, strips: {} }
+  return { id, name, bayOrder: [], bays: {}, strips: {}, archive: [] }
+}
+
+/**
+ * @typedef {Object} ArchivedStrip
+ * @property {string} entryId      `${strip.id}:${archivedAt}`
+ * @property {string} archivedAt   ISO timestamp
+ * @property {string} fromBayId
+ * @property {string} fromBayName  kept because the bay may be gone later
+ * @property {Strip} strip         full snapshot
+ */
+
+/** Prepend snapshots of `strips` (in order) to the board's archive and trim to the cap. */
+function archiveStrips(board, strips, at) {
+  if (strips.length === 0) return board.archive ?? []
+  const entries = strips.map((strip) => {
+    const bay = board.bays[strip.currentBayId]
+    return {
+      entryId: `${strip.id}:${at}`,
+      archivedAt: at,
+      fromBayId: strip.currentBayId,
+      fromBayName: bay?.name ?? '',
+      strip,
+    }
+  })
+  return [...entries, ...(board.archive ?? [])].slice(0, ARCHIVE_LIMIT)
+}
+
+/** Archive without the newest entry for each of `stripIds` (used by undo). */
+function dropNewestEntries(archive, stripIds) {
+  const pending = new Set(stripIds)
+  return (archive ?? []).filter((e) => {
+    if (pending.has(e.strip.id)) {
+      pending.delete(e.strip.id)
+      return false
+    }
+    return true
+  })
 }
 
 /** @returns {AppState} */
@@ -66,7 +105,8 @@ export const actions = {
   renameBay: (boardId, bayId, name) => ({ type: 'renameBay', boardId, bayId, name }),
   setBayColor: (boardId, bayId, color) => ({ type: 'setBayColor', boardId, bayId, color }),
   reorderBays: (boardId, newBayOrder) => ({ type: 'reorderBays', boardId, newBayOrder }),
-  deleteBay: (boardId, bayId) => ({ type: 'deleteBay', boardId, bayId }),
+  /** Deletes the bay; its strips are archived. */
+  deleteBay: (boardId, bayId, at = now()) => ({ type: 'deleteBay', boardId, bayId, at }),
 
   createFlightStrip: (boardId, bayId, fields, id = makeId(), at = now()) => ({
     type: 'createFlightStrip', boardId, bayId, fields, id, at,
@@ -75,7 +115,8 @@ export const actions = {
     type: 'createQuickStrip', boardId, bayId, stripType, quickValue, id, at,
   }),
   updateStrip: (boardId, stripId, patch) => ({ type: 'updateStrip', boardId, stripId, patch }),
-  deleteStrip: (boardId, stripId) => ({ type: 'deleteStrip', boardId, stripId }),
+  /** Removes the strip from the board into the archive. */
+  deleteStrip: (boardId, stripId, at = now()) => ({ type: 'deleteStrip', boardId, stripId, at }),
   /**
    * Move a strip to `targetIndex` within `targetBayId`. The index is relative
    * to the target list *without* the moved strip (dnd-kit arrayMove semantics).
@@ -96,6 +137,12 @@ export const actions = {
   restoreBay: (boardId, bay, strips, index) => ({ type: 'restoreBay', boardId, bay, strips, index }),
   /** Put a deleted strip back at `index` in its bay. */
   restoreStrip: (boardId, strip, index) => ({ type: 'restoreStrip', boardId, strip, index }),
+
+  /** Bring an archived strip back onto the board at the end of `targetBayId`. */
+  restoreFromArchive: (boardId, entryId, targetBayId, newId = makeId(), at = now()) => ({
+    type: 'restoreFromArchive', boardId, entryId, targetBayId, newId, at,
+  }),
+  clearArchive: (boardId) => ({ type: 'clearArchive', boardId }),
 }
 
 // ---------------------------------------------------------------------------
@@ -212,12 +259,14 @@ export function reducer(state, action) {
         const bay = b.bays[action.bayId]
         if (!bay) return b
         const strips = { ...b.strips }
+        const removed = bay.stripOrder.map((id) => b.strips[id]).filter(Boolean)
         for (const id of bay.stripOrder) delete strips[id]
         return {
           ...b,
           bays: withoutKey(b.bays, bay.id),
           bayOrder: b.bayOrder.filter((id) => id !== bay.id),
           strips,
+          archive: archiveStrips(b, removed, action.at ?? now()),
         }
       })
 
@@ -271,7 +320,12 @@ export function reducer(state, action) {
         const bays = bay
           ? { ...b.bays, [bay.id]: { ...bay, stripOrder: bay.stripOrder.filter((id) => id !== strip.id) } }
           : b.bays
-        return { ...b, bays, strips: withoutKey(b.strips, strip.id) }
+        return {
+          ...b,
+          bays,
+          strips: withoutKey(b.strips, strip.id),
+          archive: archiveStrips(b, [strip], action.at ?? now()),
+        }
       })
     case 'moveStrip':
       return updateBoard(state, action.boardId, (b) => {
@@ -335,7 +389,13 @@ export function reducer(state, action) {
         }
         const bayOrder = [...b.bayOrder]
         bayOrder.splice(clampIndex(action.index, bayOrder.length), 0, bay.id)
-        return { ...b, bays: { ...b.bays, [bay.id]: { ...bay, stripOrder } }, bayOrder, strips }
+        return {
+          ...b,
+          bays: { ...b.bays, [bay.id]: { ...bay, stripOrder } },
+          bayOrder,
+          strips,
+          archive: dropNewestEntries(b.archive, stripOrder),
+        }
       })
     case 'restoreStrip':
       return updateBoard(state, action.boardId, (b) => {
@@ -349,8 +409,27 @@ export function reducer(state, action) {
           ...b,
           bays: { ...b.bays, [bay.id]: { ...bay, stripOrder } },
           strips: { ...b.strips, [strip.id]: strip },
+          archive: dropNewestEntries(b.archive, [strip.id]),
         }
       })
+
+    // ----- archive -----
+    case 'restoreFromArchive':
+      return updateBoard(state, action.boardId, (b) => {
+        const entry = (b.archive ?? []).find((e) => e.entryId === action.entryId)
+        const bay = b.bays[action.targetBayId]
+        if (!entry || !bay) return b
+        const id = b.strips[entry.strip.id] ? action.newId : entry.strip.id
+        const strip = { ...entry.strip, id, currentBayId: bay.id, lastMovedAt: action.at }
+        return {
+          ...b,
+          bays: { ...b.bays, [bay.id]: { ...bay, stripOrder: [...bay.stripOrder, id] } },
+          strips: { ...b.strips, [id]: strip },
+          archive: b.archive.filter((e) => e !== entry),
+        }
+      })
+    case 'clearArchive':
+      return updateBoard(state, action.boardId, (b) => ((b.archive ?? []).length ? { ...b, archive: [] } : b))
 
     // ----- settings -----
     case 'setKeepScreenOn':
@@ -397,31 +476,53 @@ export function sanitizeBoard(src, id) {
   for (const bayId of bayOrder) {
     const order = Array.isArray(src.bays[bayId].stripOrder) ? src.bays[bayId].stripOrder : []
     for (const stripId of order) {
-      const raw = src.strips?.[stripId]
-      if (typeof stripId !== 'string' || !raw || strips[stripId]) continue
-      let def
-      try {
-        def = getStripType(raw.type)
-      } catch {
-        continue
-      }
-      const strip = {
-        id: stripId,
-        type: def.key,
-        currentBayId: bayId,
-        createdAt: typeof raw.createdAt === 'string' ? raw.createdAt : now(),
-        lastMovedAt: typeof raw.lastMovedAt === 'string' ? raw.lastMovedAt : now(),
-      }
-      if (typeof raw.colorOverride === 'string' && raw.colorOverride) strip.colorOverride = raw.colorOverride
-      if (def.key === 'flight') strip.flightKind = normalizeFlightKind(raw.flightKind)
-      for (const f of def.fields) strip[f] = typeof raw[f] === 'string' ? raw[f] : ''
-      if (def.quickAdd && !strip[def.quickField]) continue
-      if (!def.quickAdd && !strip.callsign) continue
+      if (typeof stripId !== 'string' || strips[stripId]) continue
+      const strip = sanitizeStrip(src.strips?.[stripId], stripId, bayId)
+      if (!strip) continue
       strips[stripId] = strip
       bays[bayId].stripOrder.push(stripId)
     }
   }
-  return { id, name: cleanName(src.name), bayOrder, bays, strips }
+  const archive = []
+  for (const raw of Array.isArray(src.archive) ? src.archive : []) {
+    if (!raw || typeof raw !== 'object' || typeof raw.archivedAt !== 'string') continue
+    const fromBayId = typeof raw.fromBayId === 'string' ? raw.fromBayId : ''
+    const strip = sanitizeStrip(raw.strip, raw.strip?.id, fromBayId)
+    if (!strip) continue
+    archive.push({
+      entryId: `${strip.id}:${raw.archivedAt}`,
+      archivedAt: raw.archivedAt,
+      fromBayId,
+      fromBayName: typeof raw.fromBayName === 'string' ? raw.fromBayName : '',
+      strip,
+    })
+    if (archive.length >= ARCHIVE_LIMIT) break
+  }
+  return { id, name: cleanName(src.name), bayOrder, bays, strips, archive }
+}
+
+/** Rebuild one strip from untrusted data; null if unusable. */
+function sanitizeStrip(raw, id, bayId) {
+  if (typeof id !== 'string' || !id || !raw || typeof raw !== 'object') return null
+  let def
+  try {
+    def = getStripType(raw.type)
+  } catch {
+    return null
+  }
+  const strip = {
+    id,
+    type: def.key,
+    currentBayId: bayId,
+    createdAt: typeof raw.createdAt === 'string' ? raw.createdAt : now(),
+    lastMovedAt: typeof raw.lastMovedAt === 'string' ? raw.lastMovedAt : now(),
+  }
+  if (typeof raw.colorOverride === 'string' && raw.colorOverride) strip.colorOverride = raw.colorOverride
+  if (def.key === 'flight') strip.flightKind = normalizeFlightKind(raw.flightKind)
+  for (const f of def.fields) strip[f] = typeof raw[f] === 'string' ? raw[f] : ''
+  if (def.quickAdd && !strip[def.quickField]) return null
+  if (!def.quickAdd && !strip.callsign) return null
+  return strip
 }
 
 // ---------------------------------------------------------------------------

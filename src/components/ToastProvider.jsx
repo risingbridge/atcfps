@@ -23,13 +23,24 @@ export default function ToastProvider({ children }) {
 
   useEffect(() => () => clearTimeout(timer.current), [])
 
+  // Popover puts the toast in the top layer so it shows above open <dialog>s.
+  const toastRef = useCallback((el) => {
+    if (el?.showPopover && !el.matches(':popover-open')) {
+      try {
+        el.showPopover()
+      } catch {
+        /* unsupported or already open */
+      }
+    }
+  }, [])
+
   const api = useMemo(() => ({ showToast, dismiss }), [showToast, dismiss])
 
   return (
     <ToastContext.Provider value={api}>
       {children}
       {toast && (
-        <div className={`toast toast-${toast.tone}`} role="status">
+        <div key={toast.id} ref={toastRef} className={`toast toast-${toast.tone}`} role="status" popover="manual">
           <span className="toast-message">{toast.message}</span>
           {toast.actionLabel && (
             <button

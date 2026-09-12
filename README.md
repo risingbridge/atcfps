@@ -19,7 +19,8 @@ build ships a Content-Security-Policy that blocks any outbound request.
 - iPad-first: three bays across in landscape, 44 px+ touch targets
 - Drag strips between and within bays; long-press to lift on touch
 - Tap a strip to edit or delete; highlight stripe; time-in-bay ageing
-- Undo for deletes; confirm on bay/board delete
+- Removed strips go to a per-board archive (created / removed times, full
+  details, restore to any bay); undo for removes; confirm on bay/board delete
 - Export/import boards as JSON (⋯ menu) — your backup, since browsers can
   evict site data
 - Keep-screen-on toggle (Screen Wake Lock, needs HTTPS)

@@ -107,7 +107,7 @@ export default function FlightStripModal({ initial, onSubmit, onClose, onDelete 
         <div className="modal-actions">
           {editing && onDelete && (
             <button type="button" className="btn btn-danger" onClick={onDelete}>
-              Delete
+              Remove
             </button>
           )}
           <span className="spacer" />

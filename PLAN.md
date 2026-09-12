@@ -52,9 +52,8 @@ Defaults I'll use unless told otherwise:
 
 ---
 
-> **Status (2026-09-12):** Phases 0–5 built. Phases 0–4 verified on the
-> iPad; Phase 5 verified in Chromium at 11"/12.9"/10.9" iPad viewports,
-> pending a look on the real device.
+> **Status (2026-09-12):** Phases 0–6 built. 0–5 deployed; 6 verified in
+> Chromium, pending push.
 
 ## Phase 0 — Scaffold ✅
 
@@ -354,6 +353,98 @@ reads (`--strip-bg`, `--strip-fg`, `--strip-fg-muted`, `--strip-divider`):
 **Done when:** a flight strip can be created as arrival/departure/other and
 shows yellow/blue/black; vehicles are red; nothing on screen is smaller
 than 44 px to tap; three bays fit on the iPad in landscape.
+
+---
+
+## Phase 6 — Strip archive ✅
+
+Decided with the user:
+
+| Question | Decision |
+|---|---|
+| Scope | **Per board.** Each board carries its own archive; a board export includes it. |
+| What is archived | **Every removal, all types.** "Delete" on a strip becomes **Remove** and always archives. Deleting a bay archives its strips. Info/vehicle strips are archived with their message / vehicle ID as the label. |
+| Retention | **Capped count**: the newest 500 entries per board; older ones fall off. |
+| Archive view | Read the list (label, created, archived); **tap for full details**; **restore** an entry back to a bay of your choice. |
+
+Calls I'll make unless told otherwise:
+
+- Deleting a **board** deletes it whole, archive included (undo brings the
+  board back intact). There is no cross-board archive to move it to.
+- **Undo** after a removal restores the strip *and* drops its archive
+  entry, so undo leaves no ghost record. Restore-from-archive does the same.
+- Archive entries are full strip snapshots plus `archivedAt`, `fromBayId`
+  and `fromBayName` (the name is stored because the bay may be gone by
+  the time you look). Entry id = `stripId:archivedAt`, so a strip removed
+  twice makes two entries with no id generation in the reducer.
+- Restore puts the strip at the **bottom** of the chosen bay with
+  `lastMovedAt = now` (its time-in-bay starts over); the original id is
+  kept unless it would collide, in which case a fresh one is used.
+- Times display ATC-style: `1432Z`, with the date prefixed (`11 Sep 1432Z`)
+  when it isn't today.
+- A **Clear archive** action (confirm) lives in the archive view.
+- The archive is not printed.
+
+### 6a — Data model + reducer
+
+1. `project.md` §2: `Board.archive: ArchivedStrip[]` (newest first);
+   `ArchivedStrip = Strip snapshot + { archivedAt, fromBayId, fromBayName }`.
+2. `store.js`
+   - `ARCHIVE_LIMIT = 500`; helper `archiveStrips(board, strips, at)` that
+     prepends entries and trims.
+   - `deleteStrip(boardId, stripId, at = now())` → archives.
+   - `deleteBay(boardId, bayId, at = now())` → archives the bay's strips in
+     order.
+   - `restoreStrip` / `restoreBay` (undo) → also remove the matching
+     entries (`stripId` + `archivedAt`).
+   - `restoreFromArchive(boardId, entryId, targetBayId, newId?, at = now())`
+     → strip back at the end of the bay, entry removed.
+   - `clearArchive(boardId)`.
+   - `newBoard()` gets `archive: []`; `sanitizeBoard` validates and carries
+     entries (drops malformed ones, re-applies the cap); missing → `[]`, so
+     existing stored boards need no migration.
+3. Tests: archive on remove; cascade on bay delete (bay name captured);
+   cap trims oldest; undo removes the entry; restore-from-archive into a
+   bay (and into a missing bay → no-op); id collision on restore; sanitize
+   round-trip through import.
+
+### 6b — Wording
+
+- Strip edit modals and toasts say **Remove** / "Removed SAS1234 · Undo".
+- Bay delete confirm: `Delete bay "X"? Its 3 strips will be archived.`
+- Board ⋯ menu gets **Archive… (N)**.
+
+### 6c — Archive view
+
+`ArchiveView.jsx`, a full-screen `<dialog>` (`min(960px, 96vw)` ×
+`90dvh`), opened from the board menu:
+
+- Header: board name, entry count, **Clear archive** (danger, confirm),
+  Close.
+- List, newest first, rows ≥ 52 px: type/kind colour chip · **label**
+  (callsign / vehicle ID / message) · created · archived · from bay.
+  Same colour language as the board (yellow/blue/black/red/amber chip).
+- Tap a row → it expands in place to show every field (route, levels,
+  squawk, remarks / notes) plus a **Restore to [bay ▾] → Restore** control.
+  Only one row expanded at a time. Restore closes the row, shows a toast
+  "Restored SAS1234 to Arrivals".
+- Empty state: "Nothing archived yet. Removed strips end up here."
+- Mono for callsigns/times, sans for the rest; no hover-only affordances.
+- `lib/time.js`: `formatZuluDate(iso, now)` → `1432Z` or `11 Sep 1432Z`.
+
+### 6d — Verification
+
+- Reducer tests green; lint; production build under CSP.
+- In Chromium at 1194 × 834: remove a strip → appears in archive with
+  correct times and bay; undo → gone from archive; delete a bay with
+  strips → all archived with the bay's name; restore one to another bay;
+  clear archive; export the board and confirm the archive is in the JSON,
+  import it back and confirm it's still there.
+- 500-cap check via a scripted loop.
+
+**Done when:** every removed strip can be found in its board's archive with
+label, created and archived times; a tap shows the full strip; restore puts
+it back on the board; the archive survives reload and export/import.
 
 ---
 

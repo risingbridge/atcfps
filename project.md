@@ -39,6 +39,14 @@ Board
   - bayOrder: [bayId, ...]
   - bays: { [bayId]: Bay }
   - strips: { [stripId]: Strip }
+  - archive: [ArchivedStrip, ...]   // newest first, capped at 500 (Phase 6)
+
+ArchivedStrip
+  - entryId        // `${strip.id}:${archivedAt}`
+  - archivedAt
+  - fromBayId
+  - fromBayName    // kept: the bay may be gone by the time you look
+  - strip          // full Strip snapshot
 
 Bay
   - id

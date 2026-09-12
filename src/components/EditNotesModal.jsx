@@ -46,7 +46,7 @@ export default function EditNotesModal({ strip, onSubmit, onClose, onDelete }) {
         </div>
         <div className="modal-actions">
           <button type="button" className="btn btn-danger" onClick={onDelete}>
-            Delete
+            Remove
           </button>
           <span className="spacer" />
           <button type="button" className="btn btn-quiet" onClick={() => ref.current.close()}>

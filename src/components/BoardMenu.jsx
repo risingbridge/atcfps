@@ -1,9 +1,10 @@
-import { useRef } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useDialogs } from '../hooks/useDialogs.js'
 import { useToast } from '../hooks/useToast.js'
 import { exportAll, exportBoard, parseImport, readFileText } from '../lib/exportImport.js'
 import { actions } from '../state/store.js'
 import { useStore } from '../state/storeContext.js'
+import ArchiveView from './ArchiveView.jsx'
 import Menu from './Menu.jsx'
 
 export default function BoardMenu() {
@@ -12,6 +13,9 @@ export default function BoardMenu() {
   const { showToast } = useToast()
   const fileInput = useRef(null)
   const board = state.boards[state.activeBoardId]
+  const [archiveOpen, setArchiveOpen] = useState(false)
+  const closeArchive = useCallback(() => setArchiveOpen(false), [])
+  const archiveCount = board.archive?.length ?? 0
 
   async function newBoard() {
     const name = await prompt('New board', `Board ${state.boardOrder.length + 1}`, { confirmLabel: 'Create' })
@@ -53,6 +57,8 @@ export default function BoardMenu() {
     { label: 'New board…', onSelect: newBoard },
     { label: 'Rename board…', onSelect: rename },
     'separator',
+    { label: `Archive… (${archiveCount})`, onSelect: () => setArchiveOpen(true) },
+    'separator',
     { label: 'Export this board', onSelect: () => exportBoard(board) },
     { label: 'Export all boards', onSelect: () => exportAll(state) },
     { label: 'Import…', onSelect: () => fileInput.current?.click() },
@@ -65,6 +71,7 @@ export default function BoardMenu() {
   return (
     <>
       <Menu label="Board menu" items={items} />
+      {archiveOpen && <ArchiveView onClose={closeArchive} />}
       <input
         ref={fileInput}
         type="file"

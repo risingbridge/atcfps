@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { actions as A, initialState, reducer, sanitizeBoard, shiftInOrder } from './store.js'
+import { ARCHIVE_LIMIT, actions as A, initialState, reducer, sanitizeBoard, shiftInOrder } from './store.js'
 
 const T0 = '2026-09-12T10:00:00.000Z'
 const T1 = '2026-09-12T10:05:00.000Z'
@@ -350,5 +350,105 @@ describe('flightKind', () => {
     expect(b.strips.old.flightKind).toBe('other')
     expect(b.strips.arr.flightKind).toBe('arrival')
     expect(b.strips.bad.flightKind).toBe('other')
+  })
+})
+
+describe('archive', () => {
+  const labels = (b) => b.archive.map((e) => e.strip.callsign ?? e.strip.vehicleId ?? e.strip.message)
+
+  it('removing a strip archives a snapshot with bay name and time', () => {
+    const s = run(fixture(), A.deleteStrip('b', 's1', T1))
+    const b = s.boards.b
+    expect(b.strips.s1).toBeUndefined()
+    expect(b.archive).toHaveLength(1)
+    expect(b.archive[0]).toMatchObject({
+      entryId: `s1:${T1}`, archivedAt: T1, fromBayId: 'x', fromBayName: 'X',
+      strip: { id: 's1', callsign: 'SAS1', createdAt: T0 },
+    })
+    assertInvariants(b)
+  })
+
+  it('newest entries come first', () => {
+    const s = run(fixture(), A.deleteStrip('b', 's1', T0), A.deleteStrip('b', 's2', T1))
+    expect(labels(s.boards.b)).toEqual(['SAS2', 'SAS1'])
+  })
+
+  it('deleting a bay archives its strips in order with the bay name', () => {
+    const s = run(fixture(), A.deleteBay('b', 'x', T1))
+    const b = s.boards.b
+    expect(labels(b)).toEqual(['SAS1', 'SAS2', 'Turb FL300'])
+    expect(b.archive.every((e) => e.fromBayName === 'X' && e.archivedAt === T1)).toBe(true)
+  })
+
+  it('undo (restoreStrip) removes the newest matching entry only', () => {
+    const s0 = fixture()
+    const strip = s0.boards.b.strips.s1
+    let s = run(s0, A.deleteStrip('b', 's1', T0), A.restoreStrip('b', strip, 0), A.deleteStrip('b', 's1', T1))
+    expect(s.boards.b.archive.map((e) => e.archivedAt)).toEqual([T1])
+    s = run(s, A.restoreStrip('b', strip, 0))
+    expect(s.boards.b.archive).toEqual([])
+  })
+
+  it('undo (restoreBay) removes the entries of its strips', () => {
+    const s0 = fixture()
+    const bay = s0.boards.b.bays.x
+    const strips = s0.boards.b.strips
+    const s = run(s0, A.deleteBay('b', 'x', T1), A.restoreBay('b', bay, strips, 0))
+    expect(s.boards.b.archive).toEqual([])
+    assertInvariants(s.boards.b)
+  })
+
+  it('restoreFromArchive puts the strip at the end of the chosen bay and drops the entry', () => {
+    let s = run(fixture(), A.deleteStrip('b', 's1', T0))
+    s = run(s, A.restoreFromArchive('b', `s1:${T0}`, 'y', 'newid', T1))
+    const b = s.boards.b
+    expect(b.bays.y.stripOrder).toEqual(['s4', 's1'])
+    expect(b.strips.s1).toMatchObject({ currentBayId: 'y', lastMovedAt: T1, createdAt: T0, callsign: 'SAS1' })
+    expect(b.archive).toEqual([])
+    assertInvariants(b)
+  })
+
+  it('restoreFromArchive uses a fresh id when the original is taken', () => {
+    let s = run(fixture(), A.deleteStrip('b', 's1', T0))
+    // a new strip re-uses id s1 meanwhile
+    s = run(s, A.createFlightStrip('b', 'z', { callsign: 'NEW' }, 's1', T1))
+    s = run(s, A.restoreFromArchive('b', `s1:${T0}`, 'y', 'fresh', T1))
+    expect(s.boards.b.strips.fresh).toMatchObject({ callsign: 'SAS1', currentBayId: 'y' })
+    expect(s.boards.b.strips.s1.callsign).toBe('NEW')
+    assertInvariants(s.boards.b)
+  })
+
+  it('restoreFromArchive is a no-op for unknown entry or bay', () => {
+    const s0 = run(fixture(), A.deleteStrip('b', 's1', T0))
+    expect(run(s0, A.restoreFromArchive('b', 'nope', 'y', 'n', T1))).toBe(s0)
+    expect(run(s0, A.restoreFromArchive('b', `s1:${T0}`, 'nope', 'n', T1))).toBe(s0)
+  })
+
+  it('clearArchive empties it', () => {
+    const s = run(fixture(), A.deleteStrip('b', 's1', T0), A.clearArchive('b'))
+    expect(s.boards.b.archive).toEqual([])
+    expect(run(s, A.clearArchive('b'))).toBe(s)
+  })
+
+  it('caps at ARCHIVE_LIMIT, dropping the oldest', () => {
+    let s = run(initialState({ boardId: 'b' }), A.addBay('b', 'X', 'x'))
+    for (let i = 0; i < ARCHIVE_LIMIT + 5; i++) {
+      s = run(s, A.createQuickStrip('b', 'x', 'info', `m${i}`, `q${i}`, T0), A.deleteStrip('b', `q${i}`, T0))
+    }
+    const b = s.boards.b
+    expect(b.archive).toHaveLength(ARCHIVE_LIMIT)
+    expect(b.archive[0].strip.message).toBe(`m${ARCHIVE_LIMIT + 4}`)
+    expect(b.archive.at(-1).strip.message).toBe('m5')
+  })
+
+  it('survives sanitizeBoard (import) and drops malformed entries', () => {
+    const src = run(fixture(), A.deleteStrip('b', 's1', T0), A.deleteStrip('b', 's4', T1)).boards.b
+    const clean = sanitizeBoard(
+      { ...src, archive: [...src.archive, { archivedAt: T1, strip: { type: 'flight' } }, 'junk', { strip: src.strips.s2 }] },
+      'imp',
+    )
+    expect(clean.archive).toHaveLength(2)
+    expect(clean.archive[0]).toMatchObject({ entryId: `s4:${T1}`, fromBayName: 'Y', strip: { vehicleId: 'Follow-me 2' } })
+    expect(sanitizeBoard({ bayOrder: [], bays: {} }, 'x').archive).toEqual([])
   })
 })

@@ -1,5 +1,5 @@
 import { makeId } from '../lib/id.js'
-import { FLIGHT_FIELDS, getStripType } from '../lib/stripTypes.js'
+import { FLIGHT_FIELDS, getStripType, normalizeFlightKind } from '../lib/stripTypes.js'
 
 /**
  * @typedef {Object} Strip
@@ -9,7 +9,8 @@ import { FLIGHT_FIELDS, getStripType } from '../lib/stripTypes.js'
  * @property {string} createdAt   ISO timestamp
  * @property {string} lastMovedAt ISO timestamp
  * @property {string} [colorOverride]
- * // flight: callsign, aircraftType, route, requestedAltitude, clearedAltitude, squawk, remarks
+ * // flight: flightKind ('arrival'|'departure'|'other'), callsign, aircraftType, route,
+ * //         requestedAltitude, clearedAltitude, squawk, remarks
  * // info:   message, notes
  * // vehicle: vehicleId, notes
  *
@@ -229,6 +230,7 @@ export function reducer(state, action) {
           currentBayId: action.bayId,
           createdAt: action.at,
           lastMovedAt: action.at,
+          flightKind: normalizeFlightKind(action.fields?.flightKind),
           ...pick(action.fields, FLIGHT_FIELDS),
         }),
       )
@@ -255,6 +257,10 @@ export function reducer(state, action) {
         if (!strip) return b
         // Structural fields are owned by other actions.
         const { id: _i, type: _t, currentBayId: _c, createdAt: _a, ...patch } = action.patch ?? {}
+        if ('flightKind' in patch) {
+          if (strip.type !== 'flight') delete patch.flightKind
+          else patch.flightKind = normalizeFlightKind(patch.flightKind)
+        }
         return { ...b, strips: { ...b.strips, [strip.id]: { ...strip, ...patch } } }
       })
     case 'deleteStrip':
@@ -407,6 +413,7 @@ export function sanitizeBoard(src, id) {
         lastMovedAt: typeof raw.lastMovedAt === 'string' ? raw.lastMovedAt : now(),
       }
       if (typeof raw.colorOverride === 'string' && raw.colorOverride) strip.colorOverride = raw.colorOverride
+      if (def.key === 'flight') strip.flightKind = normalizeFlightKind(raw.flightKind)
       for (const f of def.fields) strip[f] = typeof raw[f] === 'string' ? raw[f] : ''
       if (def.quickAdd && !strip[def.quickField]) continue
       if (!def.quickAdd && !strip.callsign) continue

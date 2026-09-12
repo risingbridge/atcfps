@@ -12,9 +12,13 @@ build ships a Content-Security-Policy that blocks any outbound request.
 ## Features
 
 - Multiple boards; user-defined bays (rename, colour, drag to reorder)
-- Flight strips (full form), info and vehicle strips (quick-add, Enter)
+- Flight strips (full form, marked arrival / departure / other), info and
+  vehicle strips (quick-add, Enter)
+- Coloured strips like real strip paper: arrivals yellow, departures blue,
+  other traffic black, vehicles red, info amber
+- iPad-first: three bays across in landscape, 44 px+ touch targets
 - Drag strips between and within bays; long-press to lift on touch
-- Click a strip to edit; highlight colours; time-in-bay ageing
+- Tap a strip to edit or delete; highlight stripe; time-in-bay ageing
 - Undo for deletes; confirm on bay/board delete
 - Export/import boards as JSON (⋯ menu) — your backup, since browsers can
   evict site data

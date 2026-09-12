@@ -13,6 +13,11 @@ export default function BoardMenu() {
   const fileInput = useRef(null)
   const board = state.boards[state.activeBoardId]
 
+  async function newBoard() {
+    const name = await prompt('New board', `Board ${state.boardOrder.length + 1}`, { confirmLabel: 'Create' })
+    if (name != null) dispatch(actions.createBoard(name))
+  }
+
   async function rename() {
     const name = await prompt('Rename board', board.name, { confirmLabel: 'Rename' })
     if (name != null) dispatch(actions.renameBoard(board.id, name))
@@ -45,6 +50,7 @@ export default function BoardMenu() {
   }
 
   const items = [
+    { label: 'New board…', onSelect: newBoard },
     { label: 'Rename board…', onSelect: rename },
     'separator',
     { label: 'Export this board', onSelect: () => exportBoard(board) },

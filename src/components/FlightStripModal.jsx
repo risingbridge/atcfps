@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { FLIGHT_FIELDS } from '../lib/stripTypes.js'
+import { FLIGHT_FIELDS, FLIGHT_KINDS, FLIGHT_KIND_META, normalizeFlightKind } from '../lib/stripTypes.js'
 import ColorPicker from './ColorPicker.jsx'
 
 const LABELS = {
@@ -29,6 +29,7 @@ export default function FlightStripModal({ initial, onSubmit, onClose, onDelete 
   const ref = useRef(null)
   const [fields, setFields] = useState(() => ({ ...blank(), ...pickFields(initial) }))
   const [color, setColor] = useState(initial?.colorOverride ?? '')
+  const [kind, setKind] = useState(() => normalizeFlightKind(initial?.flightKind))
   const editing = !!initial
 
   useEffect(() => {
@@ -48,7 +49,8 @@ export default function FlightStripModal({ initial, onSubmit, onClose, onDelete 
     e.preventDefault()
     const trimmed = Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, v.trim()]))
     if (!trimmed.callsign) return
-    onSubmit(editing ? { ...trimmed, colorOverride: color || undefined } : trimmed)
+    const out = { ...trimmed, flightKind: kind }
+    onSubmit(editing ? { ...out, colorOverride: color || undefined } : out)
     ref.current.close()
   }
 
@@ -62,6 +64,21 @@ export default function FlightStripModal({ initial, onSubmit, onClose, onDelete 
     >
       <form className="modal-body" onSubmit={submit}>
         <h2 className="modal-title">{editing ? 'Edit flight strip' : 'New flight strip'}</h2>
+        <div className="segmented" role="radiogroup" aria-label="Flight kind">
+          {FLIGHT_KINDS.map((k) => (
+            <button
+              key={k}
+              type="button"
+              role="radio"
+              aria-checked={kind === k}
+              className={`segment ${kind === k ? 'is-selected' : ''}`}
+              data-kind={k}
+              onClick={() => setKind(k)}
+            >
+              {FLIGHT_KIND_META[k].label}
+            </button>
+          ))}
+        </div>
         <div className="field-grid">
           {FLIGHT_FIELDS.filter((f) => f !== 'remarks').map((f) => (
             <label key={f} className="field">

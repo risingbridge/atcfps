@@ -2,6 +2,20 @@
 // render case in Strip.jsx and (if not quick-add) a form — nothing in the
 // bay or drag-and-drop code should need to know about it.
 
+/** Arrival / departure / other — drives the flight strip's colour. */
+export const FLIGHT_KINDS = ['arrival', 'departure', 'other']
+export const FLIGHT_KIND_META = {
+  arrival: { label: 'Arrival', code: 'ARR' },
+  departure: { label: 'Departure', code: 'DEP' },
+  other: { label: 'Other', code: '' },
+}
+export const DEFAULT_FLIGHT_KIND = 'other'
+
+export function normalizeFlightKind(value) {
+  return FLIGHT_KINDS.includes(value) ? value : DEFAULT_FLIGHT_KIND
+}
+
+/** Free-text fields of a flight strip (flightKind is handled separately). */
 export const FLIGHT_FIELDS = [
   'callsign',
   'aircraftType',

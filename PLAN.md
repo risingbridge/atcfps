@@ -52,8 +52,9 @@ Defaults I'll use unless told otherwise:
 
 ---
 
-> **Status (2026-09-12):** All phases (0–4) built, deployed, and verified on
-> the iPad (wake lock across app switches, long-press drag vs. scroll).
+> **Status (2026-09-12):** Phases 0–5 built. Phases 0–4 verified on the
+> iPad; Phase 5 verified in Chromium at 11"/12.9"/10.9" iPad viewports,
+> pending a look on the real device.
 
 ## Phase 0 — Scaffold ✅
 
@@ -249,6 +250,110 @@ with the toggle on, and re-acquires after switching apps and back.
 7. **Offline / service worker** — `vite-plugin-pwa` precaching the app's
    own assets so the board opens on the iPad with no connectivity at
    all. Same-origin cache only; still no outbound requests.
+
+---
+
+## Phase 5 — iPad-first layout & strip colour scheme ✅
+
+Decided with the user:
+
+| Question | Decision |
+|---|---|
+| Arrival / departure / other | Explicit `flightKind` field on flight strips (`'arrival' \| 'departure' \| 'other'`), set in the flight form, default `other`. |
+| Colour style | Full-colour strips like real coloured strip paper: vehicle **red**, arrival **yellow**, departure **blue**, other traffic **black**. Text colour flips per background. |
+| Info strips | Stay amber (current light amber-tinted paper). Distinct from arrival-yellow by saturation and the ⓘ icon. |
+| Manual highlight | Kept, but only as a left-edge stripe (never recolours the strip body). |
+| Target device | iPad, landscape, **3 bays visible** across the width; horizontal scroll for more. |
+
+Calls I'll make unless told otherwise:
+
+- Touch targets ≥ 44 × 44 px everywhere (Apple HIG). Inputs get 16 px text
+  so iPad Safari doesn't auto-zoom on focus.
+- The hover-only × on strips goes away. Deleting a strip = tap it → Delete
+  (undo toast already exists). One extra tap for a rarer action, in exchange
+  for no accidental deletes from a fat-finger on the corner.
+- "+ New board" moves into the ⋯ board menu; the board bar becomes
+  `[brand] [board ▾] [⋯] …… [keep screen on]`. Renaming the board is in
+  the menu; click-to-rename stays for bay names.
+- Existing flight strips (no `flightKind` yet) render as **other/black**
+  until edited. No storage-version bump: a missing field just defaults.
+- Bay width is derived from the viewport so three fit on any landscape
+  iPad (11" ≈ 380 px, 12.9" ≈ 430 px), capped at 480 px on desktop.
+
+### 5a — Data model + form
+
+1. `stripTypes.js`: add `flightKind` to `FLIGHT_FIELDS`-adjacent metadata
+   (`FLIGHT_KINDS = ['arrival', 'departure', 'other']`, labels, short
+   codes `ARR`/`DEP`). Keep `FLIGHT_FIELDS` for the text fields.
+2. `store.js`: `createFlightStrip` and `sanitizeBoard` normalise
+   `flightKind` (unknown/missing → `other`); `updateStrip` accepts it.
+3. `FlightStripModal`: a 44 px-tall segmented control (Arrival /
+   Departure / Other) above the text fields, colour-coded.
+4. Tests for defaulting and round-trip through import.
+5. `project.md` §2 and §5 updated to record the new field and colours.
+
+### 5b — Colour system
+
+Strip variants become CSS classes driven by `data-type` and
+`data-kind`; each variant sets four tokens the rest of the strip CSS
+reads (`--strip-bg`, `--strip-fg`, `--strip-fg-muted`, `--strip-divider`):
+
+| Variant | Background | Text |
+|---|---|---|
+| vehicle | red `#B8322A` | white |
+| flight · arrival | yellow `#F2C230` | ink `#22201C` |
+| flight · departure | blue `#2F5FA8` | white |
+| flight · other | black `#141618` + 1 px `#3E444C` border (so it separates from the charcoal board) | paper `#F0ECE2` |
+| info | amber-tinted paper (unchanged) | ink |
+
+- Cell dividers and the icon cell use `--strip-divider` (currentColor at
+  low alpha) so they work on light and dark strips.
+- Ageing text gets per-variant colours (dark amber on yellow, light
+  amber/red on dark backgrounds).
+- Highlight = 8 px left stripe in the chosen colour; body colour untouched.
+- Type-picker buttons and the icon cell use the same colours, so the
+  legend is learned from the buttons themselves.
+- Flight icon cell shows ✈ plus a small `ARR`/`DEP` code under it (nothing
+  for other) — colour carries the meaning, the code confirms it.
+- Drag overlay and placeholder styles re-checked against dark strips.
+
+### 5c — Finger-friendly layout
+
+- **Strips**: 56 px min height (from 44), callsign 18 px, other cells
+  15 px, cell padding 12 px. Message/notes wrap to two lines max.
+  Flight strips became **two rows of boxes** (callsign · type · squawk /
+  route · levels · age) — one row no longer fits at 380 px with the
+  larger type, and it's truer to real strips anyway.
+- **Bays**: header 52 px; ⋯ button 44 px; footer type buttons 48 px tall
+  with icon + label; quick-add input 48 px / 16 px text.
+- **Bay width**: `--bay-width: clamp(340px, (100vw − gutters) / 3, 480px)`;
+  board row gets `scroll-snap-type: x proximity` with bays as snap points.
+- **Board bar**: 60 px tall; board select rendered as a 44 px button-like
+  control; menu items 48 px.
+- **Modals**: `min(640px, 94vw)`, inputs 48 px / 16 px text, buttons 48 px,
+  field grid 3 → 2 columns under 700 px.
+- **Toast**: 52 px, Undo button 44 px.
+- Global: `-webkit-tap-highlight-color: transparent`, `touch-action:
+  manipulation` on buttons, `100dvh` app height, keep safe-area insets.
+- Remove hover-only affordances (`.strip-delete`, dotted-underline hover
+  on inline edit) or make them always visible.
+
+### 5d — Verification
+
+- Chromium resized to 1194 × 834 (iPad Pro 11"), 1366 × 1024 (12.9") and
+  1180 × 820 (iPad 10th gen): three bays fit, no horizontal overflow
+  inside a bay, all targets ≥ 44 px (script the check via
+  `getBoundingClientRect` over buttons/inputs).
+- Contrast check of each variant's text against its background (WCAG AA
+  4.5:1 for cell text; the 15 px cells on yellow and red are the tight
+  ones).
+- Reducer/storage tests green; lint clean; production build under CSP.
+- Final pass on the real iPad: colours at arm's length, tap vs. long-press
+  on the larger strips.
+
+**Done when:** a flight strip can be created as arrival/departure/other and
+shows yellow/blue/black; vehicles are red; nothing on screen is smaller
+than 44 px to tap; three bays fit on the iPad in landscape.
 
 ---
 

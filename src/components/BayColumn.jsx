@@ -29,7 +29,7 @@ export default function BayColumn({ bay, index, count, now }) {
     transition,
     ...(bay.color ? { '--bay-accent': bay.color } : {}),
   }
-  const { deleteStrip, deleteBay } = useDeleteWithUndo()
+  const { deleteBay } = useDeleteWithUndo()
   const [editingId, setEditingId] = useState(null)
   const closeEditor = useCallback(() => setEditingId(null), [])
   const nameRef = useRef(null)
@@ -70,7 +70,6 @@ export default function BayColumn({ bay, index, count, now }) {
               now={now}
               bayId={bay.id}
               onClick={() => setEditingId(id)}
-              onDelete={() => deleteStrip(id)}
             />
           ))}
         </div>

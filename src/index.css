@@ -8,10 +8,23 @@
   --ink: #22201c;
   --ink-muted: #6b665c;
 
-  /* per-type accents */
+  /* strip colours — coloured strip paper, text flips per background */
+  --strip-arrival-bg: #f2c230;
+  --strip-arrival-fg: #22201c;
+  --strip-departure-bg: #2f5fa8;
+  --strip-departure-fg: #ffffff;
+  --strip-other-bg: #141618;
+  --strip-other-fg: #f0ece2;
+  --strip-other-border: #3e444c;
+  --strip-vehicle-bg: #b8322a;
+  --strip-vehicle-fg: #ffffff;
+  --strip-info-bg: #f3e6be;
+  --strip-info-fg: #22201c;
+
+  /* per-type accents (icons, type buttons) */
   --accent-flight: var(--paper);
   --accent-info: #e8b93d;
-  --accent-vehicle: #4fa8a0;
+  --accent-vehicle: var(--strip-vehicle-bg);
 
   /* chrome */
   --chrome: #5c7a99;
@@ -31,9 +44,13 @@
   --s-4: 16px;
   --s-5: 24px;
 
-  --radius: 3px;
-  --bay-width: 400px;
-  --strip-height: 44px;
+  --radius: 4px;
+  /* three bays across on any landscape iPad; capped on desktop */
+  --board-gutter: 12px;
+  --bay-width: clamp(340px, calc((100vw - 4 * var(--board-gutter)) / 3), 480px);
+  --tap: 44px;
+  --strip-height: 56px;
+  --strip-row-height: 30px;
 }
 
 *,
@@ -66,6 +83,14 @@ select,
 textarea {
   font: inherit;
   color: inherit;
+}
+
+button,
+[role='button'],
+label,
+summary {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 button {

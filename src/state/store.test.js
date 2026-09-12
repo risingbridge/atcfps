@@ -136,7 +136,7 @@ describe('strip creation', () => {
     )
     const strip = s.boards.b.strips.s
     expect(strip).toEqual({
-      id: 's', type: 'flight', currentBayId: 'x', createdAt: T0, lastMovedAt: T0,
+      id: 's', type: 'flight', currentBayId: 'x', createdAt: T0, lastMovedAt: T0, flightKind: 'other',
       callsign: 'NAX22', aircraftType: '', route: '', requestedAltitude: '', clearedAltitude: '',
       squawk: '4711', remarks: '',
     })
@@ -313,5 +313,42 @@ describe('import / restore', () => {
     expect(s2.boardOrder).toEqual(['b', 'b2'])
     expect(s2.activeBoardId).toBe('b')
     assertInvariants(s2.boards.b)
+  })
+})
+
+describe('flightKind', () => {
+  it('is stored when valid and defaults to other', () => {
+    let s = run(fixture(), A.createFlightStrip('b', 'x', { callsign: 'A1', flightKind: 'arrival' }, 'a', T0))
+    expect(s.boards.b.strips.a.flightKind).toBe('arrival')
+    s = run(s, A.createFlightStrip('b', 'x', { callsign: 'A2', flightKind: 'bogus' }, 'a2', T0))
+    expect(s.boards.b.strips.a2.flightKind).toBe('other')
+  })
+
+  it('updateStrip normalises it and ignores it on non-flight strips', () => {
+    let s = run(fixture(), A.updateStrip('b', 's1', { flightKind: 'departure' }))
+    expect(s.boards.b.strips.s1.flightKind).toBe('departure')
+    s = run(s, A.updateStrip('b', 's1', { flightKind: 'nope' }))
+    expect(s.boards.b.strips.s1.flightKind).toBe('other')
+    s = run(s, A.updateStrip('b', 's3', { flightKind: 'arrival', notes: 'n' }))
+    expect(s.boards.b.strips.s3.flightKind).toBeUndefined()
+    expect(s.boards.b.strips.s3.notes).toBe('n')
+  })
+
+  it('sanitizeBoard defaults missing/invalid kinds (old data → other)', () => {
+    const b = sanitizeBoard(
+      {
+        bayOrder: ['x'],
+        bays: { x: { name: 'X', stripOrder: ['old', 'arr', 'bad'] } },
+        strips: {
+          old: { type: 'flight', callsign: 'OLD1' },
+          arr: { type: 'flight', callsign: 'ARR1', flightKind: 'arrival' },
+          bad: { type: 'flight', callsign: 'BAD1', flightKind: 42 },
+        },
+      },
+      'id',
+    )
+    expect(b.strips.old.flightKind).toBe('other')
+    expect(b.strips.arr.flightKind).toBe('arrival')
+    expect(b.strips.bad.flightKind).toBe('other')
   })
 })

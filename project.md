@@ -6,7 +6,10 @@ within bays, three strip types (flight / info / vehicle), multiple saved
 boards, local persistence, and a "keep screen on" toggle for iPad use.
 
 This is a personal hobby project — no backend, no multi-user sync. Single
-device, local persistence via `localStorage`.
+device, local persistence via `localStorage`. **Everything is local-only in
+the browser: no data ever flows back to the internet** — no analytics, no
+remote APIs, no runtime CDN loads. The only network activity is the browser
+fetching the static app files.
 
 ---
 

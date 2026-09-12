@@ -1,0 +1,73 @@
+/* Design tokens — see project.md §5 */
+:root {
+  /* surfaces */
+  --bg-board: #1b1f24;
+  --bg-bay: #22272e;
+  --paper: #f0ece2;
+  --paper-edge: #d9d3c4;
+  --ink: #22201c;
+  --ink-muted: #6b665c;
+
+  /* per-type accents */
+  --accent-flight: var(--paper);
+  --accent-info: #e8b93d;
+  --accent-vehicle: #4fa8a0;
+
+  /* chrome */
+  --chrome: #5c7a99;
+  --chrome-strong: #7a98b8;
+  --chrome-text: #d5dde6;
+  --chrome-text-muted: #8a97a6;
+  --danger: #c25a4a;
+
+  /* type */
+  --font-data: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-ui: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* spacing */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+
+  --radius: 3px;
+  --bay-width: 360px;
+  --strip-height: 44px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg-board);
+  color: var(--chrome-text);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}

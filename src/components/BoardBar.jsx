@@ -2,6 +2,7 @@ import { useDialogs } from '../hooks/useDialogs.js'
 import { actions } from '../state/store.js'
 import { useStore } from '../state/storeContext.js'
 import InlineEdit from './InlineEdit.jsx'
+import WakeLockToggle from './WakeLockToggle.jsx'
 
 export default function BoardBar() {
   const { state, dispatch } = useStore()
@@ -48,7 +49,9 @@ export default function BoardBar() {
           Delete
         </button>
       </div>
-      <div className="board-bar-tools">{/* wake-lock toggle lands here in Phase 3 */}</div>
+      <div className="board-bar-tools">
+        <WakeLockToggle />
+      </div>
     </header>
   )
 }

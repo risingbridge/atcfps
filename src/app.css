@@ -490,6 +490,85 @@ textarea.input {
   outline: none;
 }
 
+/* ---------- toggle switch ---------- */
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  cursor: pointer;
+  font-size: 13px;
+  user-select: none;
+}
+
+.toggle.is-disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-track {
+  position: relative;
+  width: 34px;
+  height: 20px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--chrome) 35%, transparent);
+  border: 1px solid var(--chrome);
+  transition: background 0.15s;
+}
+
+.toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--chrome-text);
+  transition: transform 0.15s;
+}
+
+.toggle input:checked + .toggle-track {
+  background: var(--chrome);
+}
+
+.toggle input:checked + .toggle-track .toggle-thumb {
+  transform: translateX(14px);
+}
+
+.toggle input:focus-visible + .toggle-track {
+  outline: 2px solid var(--chrome-strong);
+  outline-offset: 2px;
+}
+
+.toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toggle-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--chrome-text-muted) 50%, transparent);
+}
+
+.toggle-dot.is-active {
+  background: #6fcf7a;
+  box-shadow: 0 0 6px #6fcf7a;
+}
+
+.toggle-dot.is-error {
+  background: var(--danger);
+}
+
 /* ---------- modal ---------- */
 
 .modal {

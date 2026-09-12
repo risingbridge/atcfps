@@ -827,3 +827,86 @@ textarea.input {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* ---------- print ---------- */
+
+@media print {
+  :root {
+    --bg-board: #fff;
+    --bg-bay: #fff;
+    --chrome-text: #000;
+    --chrome-text-muted: #555;
+  }
+
+  html,
+  body,
+  #root,
+  .app {
+    height: auto;
+    background: #fff;
+  }
+
+  .board-bar-brand,
+  .board-select,
+  .board-bar .btn,
+  .board-bar .menu,
+  .board-bar-tools,
+  .bay-tools,
+  .bay-footer,
+  .bay-new,
+  .board-empty,
+  .strip-delete,
+  .toast,
+  dialog {
+    display: none !important;
+  }
+
+  .board-bar {
+    border-bottom: 2px solid #000;
+    padding: 0 0 6px;
+  }
+
+  .board-name {
+    font-size: 18px;
+  }
+
+  .board {
+    display: block;
+    overflow: visible;
+    padding: 0;
+  }
+
+  .bay {
+    width: 100%;
+    max-height: none;
+    margin: 12px 0;
+    border: 1px solid #000;
+    border-top-width: 3px;
+    border-radius: 0;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .bay-header {
+    border-bottom: 1px solid #000;
+    background: none !important;
+  }
+
+  .bay-strips {
+    overflow: visible;
+    gap: 3px;
+  }
+
+  .strip {
+    border: 1px solid #000;
+    border-left-width: 6px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .strip-age {
+    opacity: 1;
+  }
+}

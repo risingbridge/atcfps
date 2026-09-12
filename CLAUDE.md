@@ -1,0 +1,94 @@
+# CLAUDE.md
+
+ATC flight-progress strip board — a single-page React app for an iPad in
+landscape. No backend. Read `project.md` (spec) and `PLAN.md` (build log,
+decisions, per-phase status) before changing behaviour.
+
+## Hard constraint: local-only
+
+Nothing leaves the browser. No analytics, no remote APIs, no CDN loads at
+runtime. All state is in `localStorage`; the production build ships a CSP
+with `connect-src 'none'` (injected by `cspPlugin` in `vite.config.js`,
+build only — the dev server needs its HMR WebSocket). Any new dependency or
+feature must keep `npm run build` + the network tab silent after load.
+
+## Commands
+
+```
+npm run dev       # Vite dev server (base path is /atcfps/)
+npm test          # vitest — reducer, storage, import parsing, time helpers
+npm run lint      # oxlint (must be clean; fix warnings, don't suppress)
+npm run build     # production build → dist/ (with CSP + service worker)
+npm run preview   # serve dist/ locally
+```
+
+Deploy: push to `main` → GitHub Actions (lint, test, build) → GitHub Pages
+at https://risingbridge.github.io/atcfps/. The service worker means the
+new build shows on the *second* open after a deploy.
+
+## Architecture
+
+- `src/state/store.js` — the whole data model and a **pure reducer**.
+  Action creators (`actions.*`) generate ids and timestamps so the reducer
+  is deterministic and tests pass fixed values. `sanitizeBoard()` rebuilds
+  untrusted board data (imports, undo buffers) and is the single place the
+  board invariants are enforced.
+- `src/lib/stripTypes.js` — registry of strip types (flight / info /
+  vehicle) and flight kinds (arrival / departure / other). Adding a type
+  means an entry here plus a render case in `Strip.jsx`; bay and
+  drag-and-drop code must not need to know.
+- `src/lib/storage.js` — versioned `localStorage` load/save; unreadable
+  data is moved to a backup key, never discarded. Missing fields default
+  rather than bumping the schema version.
+- `src/components/StripDndContext.jsx` — dnd-kit: strips (multi-container
+  sortable) and bays (horizontal sortable) in one context; collision
+  detection partitions droppables by the active item's type.
+- Providers in `main.jsx`: `StoreProvider` → `DialogProvider` (promise
+  `confirm`/`prompt`) → `ToastProvider` (toasts with an Undo action;
+  rendered as a popover so they sit above open `<dialog>`s).
+- Styling: plain CSS. Tokens in `src/index.css`, components in
+  `src/app.css`. Strip colours are per-variant tokens (`--strip-bg`,
+  `--strip-fg`, `--strip-fg-muted`, `--strip-divider`) set by
+  `[data-type]`/`[data-kind]` — read the tokens, don't hard-code colours.
+
+## Invariants worth knowing
+
+- A strip id appears in exactly one bay's `stripOrder`, and that bay is
+  the strip's `currentBayId`.
+- `moveStrip` index semantics follow dnd-kit `arrayMove`: relative to the
+  list *without* the moved strip. `lastMovedAt` changes only on a real
+  cross-bay drop, never during drag-over or same-bay reorder.
+- Removing a strip archives it (`Board.archive`, newest first, capped at
+  500). Undo and restore-from-archive both drop the entry.
+- Always ≥ 1 board; deleting the last one creates a fresh empty board.
+
+## UI conventions (iPad-first)
+
+- Touch targets ≥ 44 × 44 px; inputs use 16 px text (Safari won't zoom).
+- No hover-only affordances. Tap a strip to edit/remove; long-press to
+  drag (`TouchSensor` 200 ms); mouse drags need 6 px movement so clicks
+  still work.
+- Modals are native `<dialog>`; mount to open, listen for `close`.
+- Times are UTC, ATC-style: `1432Z`, with a date prefix only when not
+  today (`formatZuluDate`).
+- Avoid generic-dashboard tells: no all-caps eyebrow labels, no gradients,
+  no uniform card-with-shadow treatment.
+
+## How to verify a change
+
+1. `npm run lint && npm test && npm run build`.
+2. Drive it in Chromium via the browser tools at an iPad viewport
+   (1194 × 834 for the 11"; also 1366 × 1024 and 1180 × 820): three bays
+   must fit, nothing inside a strip may overflow, console clean.
+3. For layout work, script a tap-target audit (every visible button/input
+   ≥ 44 px) and a contrast check per strip variant (≥ 4.5:1 for text).
+4. Anything touching the wake lock or touch drag needs the real iPad from
+   the Pages URL — it can't be verified anywhere else.
+
+## Working with the user
+
+- One commit per plan step, written in the imperative with a short body.
+  Commit locally as you go; **push only when asked** ("commit and push").
+- Plan a phase in `PLAN.md` first, ask the clarifying questions up front,
+  then build. Record decisions and deviations there, and tick phases off.
+- Keep `project.md` in sync when the data model or colours change.

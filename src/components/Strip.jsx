@@ -36,9 +36,11 @@ function QuickBody({ strip, def, minutes }) {
   return (
     <>
       <div className="strip-cells">
-        {def.key === 'info' && <span className="cell cell-time">{formatZulu(strip.createdAt)}</span>}
-        <span className={`cell cell-grow ${def.key === 'vehicle' ? 'cell-callsign' : 'cell-text'}`}>
-          {strip[def.quickField]}
+        <span className="cell cell-time" title="Added">
+          {formatZulu(strip.createdAt)}
+        </span>
+        <span className="cell cell-grow cell-big">
+          <span className="clamp-2">{strip[def.quickField]}</span>
         </span>
         <AgeCell minutes={minutes} />
       </div>

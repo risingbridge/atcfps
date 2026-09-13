@@ -102,7 +102,7 @@
 .bay-header {
   position: sticky;
   top: 0;
-  z-index: 3;
+  z-index: 6; /* above the sticky footer (3), gap drop zones (4) and spanning strips (2): its menu must not be covered */
   display: flex;
   align-items: center;
   gap: var(--s-2);

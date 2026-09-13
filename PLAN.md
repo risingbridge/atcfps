@@ -52,8 +52,7 @@ Defaults I'll use unless told otherwise:
 
 ---
 
-> **Status (2026-09-13):** Phases 0–10 built and deployed. Phase 11 (strip
-> look + collapsible strips) planned below.
+> **Status (2026-09-13):** Phases 0–11 built; 11A deployed, 11B pending push.
 
 ## Phase 0 — Scaffold ✅
 
@@ -652,7 +651,7 @@ Calls I'll make:
 
 ---
 
-## Phase 11 — Strip look and collapsible strips
+## Phase 11 — Strip look and collapsible strips ✅
 
 Decided with the user: every strip has a **light grey background**; the
 **type colour moves to the border** (vehicle red, arrival yellow,

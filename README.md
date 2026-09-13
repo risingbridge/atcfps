@@ -24,8 +24,9 @@ See `docs/local-only-audit.md` for the full audit.
   the gap between two bays to lay a strip across both (e.g. a vehicle cleared
   on TWY and RWY)
 - Tap a strip to edit or remove; tap the level cell to set the cleared
-  level right on the strip (FL / altitude picker); highlight stripe;
-  time-in-bay ageing
+  level right on the strip (FL / altitude picker); tap the icon to show or
+  hide notes/remarks (all strips are the same height until expanded);
+  highlight tint; time-in-bay ageing
 - Removed strips go to a per-board archive (created / removed times, full
   details, restore to any bay); undo for removes; confirm on bay/board delete
 - Export/import boards as JSON (⋯ menu) — your backup, since browsers can

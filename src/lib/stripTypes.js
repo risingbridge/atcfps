@@ -71,3 +71,8 @@ export function stripLabel(strip) {
   const value = def?.quickAdd ? strip[def.quickField] : strip.callsign
   return value || strip.id
 }
+
+/** The text a strip hides while collapsed: remarks for flights, notes otherwise. */
+export function hiddenText(strip) {
+  return (strip.type === 'flight' ? strip.remarks : strip.notes) || ''
+}

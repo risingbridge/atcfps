@@ -82,9 +82,11 @@ new build shows on the *second* open after a deploy.
 ## UI conventions (iPad-first)
 
 - Touch targets ≥ 44 × 44 px; inputs use 16 px text (Safari won't zoom).
-- No hover-only affordances. Tap a strip to edit/remove; long-press to
-  drag (`TouchSensor` 200 ms); mouse drags need 6 px movement so clicks
-  still work.
+- No hover-only affordances. Tap a strip to edit/remove; tap its icon
+  cell to expand/collapse notes (`strip.expanded`); tap the level cell
+  for the picker; long-press to drag (`TouchSensor` 200 ms); mouse drags
+  need 6 px movement so clicks still work. Collapsed strips are all
+  `--strip-height` (two rows) tall.
 - Modals are native `<dialog>`; mount to open, listen for `close`.
 - Times are UTC, ATC-style: `1432Z`, with a date prefix only when not
   today (`formatZuluDate`).

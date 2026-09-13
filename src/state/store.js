@@ -9,6 +9,7 @@ import { FLIGHT_FIELDS, getStripType, normalizeFlightKind } from '../lib/stripTy
  * @property {string} createdAt   ISO timestamp
  * @property {string} lastMovedAt ISO timestamp
  * @property {string} [colorOverride]
+ * @property {boolean} [expanded]   notes/remarks shown on the board (absent = collapsed)
  * // flight: flightKind ('arrival'|'departure'|'other'), callsign, aircraftType, route,
  * //         requestedAltitude, clearedAltitude, squawk, remarks
  * // info:   message, notes
@@ -236,6 +237,8 @@ export const actions = {
   spanWith: (boardId, stripId, otherBayId, at = now()) => ({ type: 'spanWith', boardId, stripId, otherBayId, at }),
 
   setKeepScreenOn: (value) => ({ type: 'setKeepScreenOn', value }),
+  /** Show/hide a strip's notes or remarks on the board. */
+  toggleExpanded: (boardId, stripId) => ({ type: 'toggleExpanded', boardId, stripId }),
   /** Replace one preset list (sanitised). */
   setPresets: (presetType, list) => ({ type: 'setPresets', presetType, list }),
   /** Create a quick strip from a preset (label + pre-filled notes). */
@@ -431,6 +434,14 @@ export function reducer(state, action) {
         }),
       )
     }
+    case 'toggleExpanded':
+      return updateBoard(state, action.boardId, (b) => {
+        const strip = b.strips[action.stripId]
+        if (!strip) return b
+        const { expanded: _e, ...rest } = strip
+        const next = strip.expanded ? rest : { ...rest, expanded: true }
+        return { ...b, strips: { ...b.strips, [strip.id]: next } }
+      })
     case 'updateStrip':
       return updateBoard(state, action.boardId, (b) => {
         const strip = b.strips[action.stripId]
@@ -686,6 +697,7 @@ function sanitizeStrip(raw, id, bayId) {
   }
   if (typeof raw.colorOverride === 'string' && raw.colorOverride) strip.colorOverride = raw.colorOverride
   if (typeof raw.spanBayId === 'string' && raw.spanBayId) strip.spanBayId = raw.spanBayId
+  if (raw.expanded === true) strip.expanded = true
   if (def.key === 'flight') strip.flightKind = normalizeFlightKind(raw.flightKind)
   for (const f of def.fields) strip[f] = typeof raw[f] === 'string' ? raw[f] : ''
   if (def.quickAdd && !strip[def.quickField]) return null

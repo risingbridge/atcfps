@@ -66,6 +66,7 @@ Strip (base fields shared by all types)
   - createdAt
   - lastMovedAt
   - colorOverride (optional, manual highlight)
+  - expanded (optional; Phase 11)  // notes/remarks shown on the board
   - spanBayId (optional; Phase 8) // the bay immediately to the right —
                                   // the strip is drawn across both
 

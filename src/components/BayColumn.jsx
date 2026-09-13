@@ -86,6 +86,7 @@ export default function BayColumn({ bay, index, count, now }) {
                 spanMargin={spanLayout[id]?.stripMargin}
                 onClick={() => setEditingId(id)}
                 onEditLevel={(anchor) => setLevelEdit({ stripId: id, anchor })}
+                onToggle={() => dispatch(actions.toggleExpanded(board.id, id))}
               />
             </Fragment>
           ))}

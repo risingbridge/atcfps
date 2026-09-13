@@ -54,8 +54,8 @@
   --board-gutter: 12px;
   --bay-width: clamp(340px, calc((100vw - 4 * var(--board-gutter)) / 3), 480px);
   --tap: 44px;
-  --strip-height: 56px;
   --strip-row-height: 30px;
+  --strip-height: calc(2 * var(--strip-row-height)); /* every collapsed strip: two rows */
 }
 
 *,

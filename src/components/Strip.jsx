@@ -1,4 +1,4 @@
-import { FLIGHT_KIND_META, STRIP_TYPES, normalizeFlightKind } from '../lib/stripTypes.js'
+import { FLIGHT_KIND_META, STRIP_TYPES, hiddenText, normalizeFlightKind } from '../lib/stripTypes.js'
 import { ageClass, formatMinutes, formatZulu, minutesSince } from '../lib/time.js'
 
 function AgeCell({ minutes }) {
@@ -10,7 +10,7 @@ function AgeCell({ minutes }) {
   )
 }
 
-function FlightBody({ strip, minutes, onEditLevel }) {
+function FlightBody({ strip, minutes, onEditLevel, expanded }) {
   return (
     <>
       <div className="strip-cells strip-row">
@@ -38,37 +38,43 @@ function FlightBody({ strip, minutes, onEditLevel }) {
         </button>
         <AgeCell minutes={minutes} />
       </div>
-      {strip.remarks && <div className="strip-remarks">{strip.remarks}</div>}
+      {expanded && strip.remarks && <div className="strip-remarks">{strip.remarks}</div>}
     </>
   )
 }
 
-function QuickBody({ strip, def, minutes }) {
+function QuickBody({ strip, def, minutes, expanded }) {
   return (
     <>
-      <div className="strip-cells">
+      <div className="strip-cells strip-main">
         <span className="cell cell-time" title="Added">
           {formatZulu(strip.createdAt)}
         </span>
-        <span className="cell cell-grow cell-big">{strip[def.quickField]}</span>
+        <span className="cell cell-grow cell-big">
+          <span className={expanded ? '' : 'clamp-2'}>{strip[def.quickField]}</span>
+        </span>
         <AgeCell minutes={minutes} />
       </div>
-      {strip.notes && <div className="strip-remarks">{strip.notes}</div>}
+      {expanded && strip.notes && <div className="strip-remarks">{strip.notes}</div>}
     </>
   )
 }
 
-export default function Strip({ strip, now, onClick, onEditLevel, innerRef, style, className = '', dragProps }) {
+
+
+export default function Strip({ strip, now, onClick, onEditLevel, onToggle, innerRef, style, className = '', dragProps }) {
   const def = STRIP_TYPES[strip.type]
   const merged = strip.colorOverride ? { ...style, '--strip-accent': strip.colorOverride } : style
   const minutes = now != null ? minutesSince(strip.lastMovedAt, now) : null
   const kind = strip.type === 'flight' ? normalizeFlightKind(strip.flightKind) : undefined
   const kindMeta = kind ? FLIGHT_KIND_META[kind] : null
   const label = kindMeta ? `${kindMeta.label} flight` : def.label
+  const expanded = !!strip.expanded
+  const hasHidden = hiddenText(strip).length > 0
   return (
     <div
       ref={innerRef}
-      className={`strip ${className} ${minutes != null ? ageClass(minutes) : ''}`}
+      className={`strip ${className} ${minutes != null ? ageClass(minutes) : ''} ${expanded ? 'is-expanded' : ''}`}
       data-type={strip.type}
       data-kind={kind}
       data-strip-id={strip.id}
@@ -76,15 +82,26 @@ export default function Strip({ strip, now, onClick, onEditLevel, innerRef, styl
       onClick={onClick}
       {...dragProps}
     >
-      <span className="strip-icon" aria-label={label} title={label}>
-        {def.icon}
+      <button
+        type="button"
+        className="strip-icon"
+        title={hasHidden ? (expanded ? 'Hide notes' : 'Show notes') : label}
+        aria-label={`${label}${hasHidden ? (expanded ? '; hide notes' : '; show notes') : ''}`}
+        aria-expanded={hasHidden ? expanded : undefined}
+        onClick={(e) => {
+          e.stopPropagation()
+          onToggle?.()
+        }}
+      >
+        <span className="strip-glyph">{def.icon}</span>
         {kindMeta?.code && <span className="strip-kind">{kindMeta.code}</span>}
-      </span>
+        {hasHidden && <span className="strip-chevron">{expanded ? '▾' : '▸'}</span>}
+      </button>
       <div className="strip-body">
         {strip.type === 'flight' ? (
-          <FlightBody strip={strip} minutes={minutes} onEditLevel={onEditLevel} />
+          <FlightBody strip={strip} minutes={minutes} onEditLevel={onEditLevel} expanded={expanded} />
         ) : (
-          <QuickBody strip={strip} def={def} minutes={minutes} />
+          <QuickBody strip={strip} def={def} minutes={minutes} expanded={expanded} />
         )}
       </div>
     </div>

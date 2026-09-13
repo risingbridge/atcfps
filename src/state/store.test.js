@@ -570,3 +570,21 @@ describe('presets', () => {
     expect(run(s, A.createPresetStrip('b', 'x', 'info', { label: '  ' }, 'r'))).toBe(s)
   })
 })
+
+describe('expanded', () => {
+  it('toggleExpanded sets and clears the flag', () => {
+    const s1 = run(fixture(), A.toggleExpanded('b', 's1'))
+    expect(s1.boards.b.strips.s1.expanded).toBe(true)
+    const s2 = run(s1, A.toggleExpanded('b', 's1'))
+    expect('expanded' in s2.boards.b.strips.s1).toBe(false)
+    expect(run(s2, A.toggleExpanded('b', 'nope'))).toBe(s2)
+  })
+
+  it('sanitizeBoard keeps expanded only when true', () => {
+    const src = run(fixture(), A.toggleExpanded('b', 's1')).boards.b
+    const tampered = { ...src, strips: { ...src.strips, s2: { ...src.strips.s2, expanded: 'yes' } } }
+    const clean = sanitizeBoard(tampered, 'imp')
+    expect(clean.strips.s1.expanded).toBe(true)
+    expect('expanded' in clean.strips.s2).toBe(false)
+  })
+})

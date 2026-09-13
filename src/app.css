@@ -235,7 +235,7 @@
   background: color-mix(in srgb, var(--strip-accent, var(--strip-bg)) 28%, var(--strip-bg));
   color: var(--strip-fg);
   border: 3px solid var(--strip-frame);
-  border-left-width: 8px;
+  border-left-width: 16px;
   border-radius: 3px;
   font-family: var(--font-data);
   touch-action: manipulation;

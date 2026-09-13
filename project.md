@@ -183,7 +183,7 @@ Grounded in the real object rather than a generic Kanban look:
   (`#22201C`) — literal paper-strip reference
 - **Strip colours (Phase 11, supersedes Phase 5):** every strip is light
   grey (`#E4E4E1`) with dark ink; the type colour is the **frame** (3px
-  all round, 8px left edge):
+  all round, 16px left edge):
   - Flight, arrival — yellow (`#F2C230`)
   - Flight, departure — blue (`#2F5FA8`)
   - Flight, other — black (`#141618`)

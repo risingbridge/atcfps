@@ -182,12 +182,23 @@ the new one has earned it.
 Each phase keeps the local-only audit, the touch-target and contrast
 audits, and the "verify on the real iPad" rule from this project.
 
-## 7. Open questions worth answering before R0
+## 7. Answers so far (2026-09-13)
 
-- Which segments does *your* runway need? (Final, short final, runway,
-  vacated — and on the departure side: holding point, line up, roll,
-  airborne? Intersection departures?)
-- Does the inbound lane need ETA at all, or is sequence order enough for
-  the traffic you handle?
-- Should the swipe advance be allowed to skip states, or always one step?
-- Is a tone acceptable in your environment, or visual only?
+- **Segments are configurable.** The model is a list of segments per
+  direction; a template gives a starting set (final · short final ·
+  runway · vacated / holding point · line up · roll · airborne) and any
+  segment can be added, renamed, reordered or removed per runway.
+- **ETA is nice-to-have.** Sequence order is the primary ordering of the
+  inbound lane; ETA is an optional field that, when present, drives a
+  time-sorted view and gap display.
+- **Skipping states is allowed.** A drag may land on any segment and a
+  swipe may be repeated; the log records the transition that happened
+  (e.g. "final → vacated") and the attention engine may *flag* a skipped
+  step afterwards, never block it.
+- **Audible alerts:** to be decided — see below.
+
+## 8. Still open
+
+- Is an audible alert acceptable, or visual only? Proposal: sound off by
+  default, switchable in Settings, and only for the runway-conflict
+  class of alert — never for "stale" or "timer due".

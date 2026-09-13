@@ -52,7 +52,7 @@ Defaults I'll use unless told otherwise:
 
 ---
 
-> **Status (2026-09-12):** Phases 0–8 built; 0–7 deployed.
+> **Status (2026-09-13):** Phases 0–8 built and deployed.
 
 ## Phase 0 — Scaffold ✅
 

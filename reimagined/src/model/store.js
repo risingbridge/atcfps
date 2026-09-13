@@ -489,6 +489,18 @@ export function alerts(state, nowMs = Date.now()) {
     out.push({ id: 'vehicle-final', level: 'warn', text: 'Vehicle on runway, traffic on final', tokenIds: [...vehiclesOnRwy, ...onFinal].map((t) => t.id) })
   }
   for (const t of Object.values(state.tokens)) {
+    // a transition that skipped a step on its path (e.g. final → runway without short final)
+    const last = t.events[t.events.length - 1]
+    if (last && (last.type === 'advance' || last.type === 'move') && last.from && last.to && t.intent !== 'none') {
+      const path = pathFor(runway, t.intent)
+      const a = path.indexOf(last.from)
+      const b = path.indexOf(last.to)
+      const skipped = a >= 0 && b >= 0 ? (t.intent === 'circuit' ? (b - a + path.length) % path.length : b - a) : 0
+      if (skipped > 1) {
+        const missed = t.intent === 'circuit' ? path.slice(a + 1, a + skipped) : path.slice(a + 1, b)
+        out.push({ id: `skipped:${t.id}`, level: 'warn', text: `${t.callsign || t.kind} skipped ${missed.map((id) => placeById(runway, id)?.name ?? id).join(', ')}`, tokenIds: [t.id] })
+      }
+    }
     const limit = runway.staleAfter?.[t.placeId]
     if (limit && nowMs - Date.parse(t.lastMovedAt) > limit * 60_000) {
       out.push({ id: `stale:${t.id}`, level: 'warn', text: `${t.callsign || t.kind} ${limit}+ min in ${placeById(runway, t.placeId)?.name}`, tokenIds: [t.id] })

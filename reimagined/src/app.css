@@ -59,6 +59,17 @@
   overflow: auto;
 }
 
+/* ---------- alerts ---------- */
+.bar.is-alarm { border-bottom: 3px solid var(--danger); background: color-mix(in srgb, var(--danger) 18%, var(--bg-board)); }
+.alerts { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.alert {
+  display: inline-flex; align-items: center; min-height: 36px; padding: 4px 10px;
+  border: 1px solid var(--chrome); border-radius: 4px; background: transparent; color: var(--chrome-text); font-size: 14px;
+}
+.alert-none { border-color: transparent; color: var(--chrome-text-muted); }
+.alert-warn { border-color: #b7791f; color: #ffd27a; }
+.alert-alarm { border-color: var(--danger); background: var(--danger); color: #fff; font-weight: 600; animation: blink 1s steps(2) infinite; }
+
 /* ---------- ring ---------- */
 .ring {
   display: flex;

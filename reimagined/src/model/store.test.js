@@ -155,15 +155,17 @@ describe('sequences', () => {
   })
 })
 
+const noSkip = (list) => list.filter((a) => !a.id.startsWith('skipped:'))
+
 describe('attention', () => {
   it('flags two on the runway, and runway occupied with traffic on short final', () => {
     let s = run(S0(), A.createToken('ifr', { callsign: 'A' }, null, 'a', T(0)), A.createToken('ifr', { callsign: 'B' }, null, 'b', T(0)))
     s = run(s, A.advance('a', 3, T(1)))
-    expect(alerts(s, Date.parse(T(1)))).toEqual([])
+    expect(noSkip(alerts(s, Date.parse(T(1))))).toEqual([])
     s = run(s, A.advance('b', 2, T(2))) // B on short final while A on runway
-    expect(alerts(s, Date.parse(T(2))).map((x) => x.id)).toEqual(['short-final'])
+    expect(noSkip(alerts(s, Date.parse(T(2)))).map((x) => x.id)).toEqual(['short-final'])
     s = run(s, A.advance('b', 1, T(3))) // both on runway
-    expect(alerts(s, Date.parse(T(3))).map((x) => [x.id, x.level])).toEqual([['occupancy', 'alarm'], ])
+    expect(noSkip(alerts(s, Date.parse(T(3)))).map((x) => [x.id, x.level])).toEqual([['occupancy', 'alarm']])
   })
 
   it('a vehicle with runway permission counts as on the runway', () => {
@@ -177,7 +179,7 @@ describe('attention', () => {
   })
 
   it('flags stale tokens and due timers', () => {
-    let s = run(S0(), A.createToken('ifr', { callsign: 'D' }, 'outbound', 'd', T(0)), A.advance('d', 2, T(0))) // lineup, stale after 3 min
+    let s = run(S0(), A.createToken('ifr', { callsign: 'D' }, 'outbound', 'd', T(0)), A.advance('d', 1, T(0)), A.advance('d', 1, T(0))) // lineup, stale after 3 min
     expect(alerts(s, Date.parse(T(2)))).toEqual([])
     expect(alerts(s, Date.parse(T(4))).map((x) => x.id)).toEqual(['stale:d'])
     s = run(s, A.addTimer('d', T(10), 'call back', 't1', T(0)))
@@ -185,6 +187,20 @@ describe('attention', () => {
     expect(alerts(s, Date.parse(T(11))).map((x) => x.id)).toEqual(['stale:d', 'timer:t1'])
     s = run(s, A.clearTimer('d', 't1'))
     expect(tok(s, 'd').timers).toEqual([])
+  })
+})
+
+describe('missed steps', () => {
+  it('flags a transition that skipped a step until the next transition', () => {
+    let s = run(S0(), A.createToken('ifr', { callsign: 'A' }, null, 'a', T(0)), A.advance('a', 1, T(1)), A.advance('a', 2, T(2))) // final → runway, skipping short final
+    expect(alerts(s, Date.parse(T(2))).map((x) => x.text)).toEqual(['A skipped Short final'])
+    s = run(s, A.advance('a', 1, T(3))) // runway → vacated, adjacent
+    expect(alerts(s, Date.parse(T(3)))).toEqual([])
+    // circuit wrap: shortfinal → airborne skipping the runway is a skip of 1 (runway)
+    let v = run(S0(), A.createToken('vfr', { callsign: 'V' }, null, 'v', T(0)), A.advance('v', 4, T(1)))
+    expect(v.tokens.v.placeId).toBe('shortfinal')
+    v = run(v, A.advance('v', 2, T(2)))
+    expect(alerts(v, Date.parse(T(2))).map((x) => x.text)).toEqual(['V skipped Runway'])
   })
 })
 

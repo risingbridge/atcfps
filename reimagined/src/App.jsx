@@ -6,6 +6,7 @@ import Lanes from './components/Lanes.jsx'
 import NewTokenSheet from './components/NewTokenSheet.jsx'
 import Ring from './components/Ring.jsx'
 import TokenCard from './components/TokenCard.jsx'
+import { useAlarmTone } from './hooks/useAlarmTone.js'
 import { useNow } from './hooks/useNow.js'
 import { actions, alerts, departureSequence, landingSequence } from './model/store.js'
 import { useRunway } from './state/storeContext.js'
@@ -32,7 +33,9 @@ export default function App() {
     return m
   }, [state])
 
-  const alarmIds = useMemo(() => new Set(alerts(state, now).filter((a) => a.level === 'alarm').flatMap((a) => a.tokenIds)), [state, now])
+  const alertList = useMemo(() => alerts(state, now), [state, now])
+  const alarmIds = useMemo(() => new Set(alertList.filter((a) => a.level === 'alarm').flatMap((a) => a.tokenIds)), [alertList])
+  useAlarmTone(alarmIds.size > 0, state.settings.sound)
 
   const onSwipe = useCallback((token, dir) => dispatch(dir > 0 ? actions.advance(token.id) : actions.back(token.id)), [dispatch])
   const onOpen = useCallback((token) => setOpenId(token.id), [])
@@ -46,6 +49,10 @@ export default function App() {
         onProfile={(profile) => dispatch(actions.setSettings({ profile }))}
         onNew={() => setCreating(true)}
         onFlip={() => dispatch(actions.flipRunway(runway.id))}
+        alerts={alertList}
+        sound={state.settings.sound}
+        onSound={(sound) => dispatch(actions.setSettings({ sound }))}
+        onFocus={(a) => a.tokenIds[0] && setOpenId(a.tokenIds[0])}
       />
       <FlowDndContext>
         <main className="stage">

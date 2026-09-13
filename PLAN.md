@@ -791,7 +791,7 @@ v1 has been opened once (which updates the worker).
 | Phase | Status | What |
 |---|---|---|
 | R0 — shell | ✅ | URL, pipeline, CSP, audit; a static sketch of the ring. |
-| R1 — model | | Segments, tokens, states, transitions, event log; pure reducer + tests; import of v1 boards. |
+| R1 — model | ✅ | `reimagined/src/model/`: runway template (places by kind, paths derived per intent, joins, areas, stale thresholds); tokens (ifr/vfr/vehicle/info, intent land/circuit/depart/none) with an event log; advance (skips allowed) / back / go-around (into the circuit) / move / transfer / remove; circuit count; timers; landing and departure sequence selectors; occupancy and attention rules; storage; v1 importer. 23 tests. |
 | R2 — the ring | | Runway ring with tokens; drag between segments; one-handed swipe to advance (skipping allowed) / back; event log on the card; callsign keypad + recall. |
 | R3 — lanes and time | | Inbound (sequence, optional ETA) and outbound lanes; sequence numbers; timers; holding time; position profiles. |
 | R4 — attention | | Occupancy and vehicle-vs-traffic rules, stale, due, missed step; attention bar; tone (on by default, mutable). |

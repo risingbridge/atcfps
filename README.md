@@ -49,3 +49,11 @@ npm run preview  # serve the production build locally
 ```
 
 Hosted on GitHub Pages at https://risingbridge.github.io/atcfps/
+
+## Reimagined
+
+A second app, `reimagined/`, is a from-first-principles redesign of the
+board for touch (see `docs/reimagined.md`): a strip is an object with a
+state on a process, the runway is a ring, and gestures are the record.
+It deploys alongside at https://risingbridge.github.io/atcfps/reimagined/
+and is built with the same local-only guarantees.

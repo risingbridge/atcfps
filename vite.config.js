@@ -1,35 +1,7 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
-
-// Local-only app: the built page blocks every outbound request except its own
-// static files. Applied at build time only, since Vite's dev server needs a
-// WebSocket for HMR.
-const CSP = [
-  "default-src 'self'",
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data:",
-  "connect-src 'none'",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'none'",
-].join('; ')
-
-function cspPlugin() {
-  return {
-    name: 'csp-meta',
-    apply: 'build',
-    transformIndexHtml() {
-      return [
-        {
-          tag: 'meta',
-          attrs: { 'http-equiv': 'Content-Security-Policy', content: CSP },
-          injectTo: 'head-prepend',
-        },
-      ]
-    },
-  }
-}
+import { cspPlugin } from './shared/vite-csp-plugin.mjs'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -47,6 +19,8 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,woff2,png,svg,webmanifest}'],
         navigateFallback: '/atcfps/index.html',
+        // the reimagined app lives under this scope with its own build; never answer for it
+        navigateFallbackDenylist: [/^\/atcfps\/reimagined(\/|$)/],
         cleanupOutdatedCaches: true,
       },
     }),

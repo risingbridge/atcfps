@@ -10,8 +10,13 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, extname, basename } from 'node:path'
 
-const DIST = 'dist'
-const BASE = '/atcfps/'
+// usage: node scripts/audit-local-only.mjs [distDir] [basePath] [--no-sw]
+const args = process.argv.slice(2)
+const DIST = args.find((a) => !a.startsWith('--')) ?? 'dist'
+const BASE = args.filter((a) => !a.startsWith('--'))[1] ?? '/atcfps/'
+const EXPECT_SW = !args.includes('--no-sw')
+// a nested app with its own base is audited by its own invocation
+const NESTED = ['reimagined']
 
 // Strings that look like URLs but are never requested. Keep this list short and specific.
 const INERT_URLS = [
@@ -24,8 +29,10 @@ const files = []
 ;(function walk(dir) {
   for (const name of readdirSync(dir)) {
     const p = join(dir, name)
-    if (statSync(p).isDirectory()) walk(p)
-    else files.push(p)
+    if (statSync(p).isDirectory()) {
+      if (dir === DIST && NESTED.includes(name)) continue
+      walk(p)
+    } else files.push(p)
   }
 })(DIST)
 
@@ -57,8 +64,8 @@ for (const m of html.matchAll(/<(?:script|link|img|iframe)[^>]*?(?:src|href)="([
 
 // 3) service worker: relative imports and same-origin precache only
 const sw = files.find((f) => basename(f) === 'sw.js')
-if (!sw) problems.push('sw.js missing (offline build expected)')
-else {
+if (!sw && EXPECT_SW) problems.push('sw.js missing (offline build expected)')
+else if (sw) {
   const s = text(sw)
   for (const m of s.matchAll(/define\(\[([^\]]*)\]/g)) {
     if (!/^\s*"\.\//.test(m[1])) problems.push(`sw.js: non-relative module import ${m[1]}`)
@@ -77,10 +84,13 @@ for (const f of files.filter((f) => extname(f) === '.css')) {
   }
 }
 
-// 5) manifest icons
-const manifest = JSON.parse(text(join(DIST, 'manifest.webmanifest')))
-for (const icon of manifest.icons ?? []) {
-  if (!icon.src.startsWith(BASE)) problems.push(`manifest: external icon "${icon.src}"`)
+// 5) manifest icons (if the app ships a manifest)
+const manifestFile = files.find((f) => basename(f) === 'manifest.webmanifest')
+if (manifestFile) {
+  const manifest = JSON.parse(text(manifestFile))
+  for (const icon of manifest.icons ?? []) {
+    if (!icon.src.startsWith(BASE)) problems.push(`manifest: external icon "${icon.src}"`)
+  }
 }
 
 if (problems.length) {
@@ -88,4 +98,4 @@ if (problems.length) {
   for (const p of problems) console.error('  - ' + p)
   process.exit(1)
 }
-console.log(`Local-only audit passed: ${files.length} files, CSP strict, no outbound references.`)
+console.log(`Local-only audit passed (${DIST}, base ${BASE}): ${files.length} files, CSP strict, no outbound references.`)

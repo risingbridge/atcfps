@@ -52,7 +52,10 @@ Defaults I'll use unless told otherwise:
 
 ---
 
-> **Status (2026-09-13):** Phases 0–12 built; 0–11 deployed.
+> **Status (2026-09-13):** Phases 0–12 built and deployed. A second track,
+> the **reimagined flow board**, lives in `reimagined/` and deploys to
+> `/atcfps/reimagined/` — see the section at the end and
+> `docs/reimagined.md`.
 
 ## Phase 0 — Scaffold ✅
 
@@ -768,6 +771,32 @@ Calls I'll make:
    across it, drag the divider, move it to another bay, edit label,
    remove (no archive entry), export/import, uniform strip heights
    unaffected.
+
+---
+
+## Reimagined track (`reimagined/`)
+
+A separate app, built from first principles (`docs/reimagined.md`), that
+coexists with the strip board. Same repo, own `package.json`, own tests;
+built by `npm run build:all` into `dist/reimagined/` so one Pages
+artifact carries both. Same local-only rules: the shared CSP plugin
+(`shared/vite-csp-plugin.mjs`) and its own run of the audit.
+
+Deployment detail worth knowing: v1's service worker owns the
+`/atcfps/` scope. Its navigation fallback **denylists**
+`/atcfps/reimagined/`, so it never answers for the second app. An iPad
+that still has the pre-denylist worker will show v1 at that URL until
+v1 has been opened once (which updates the worker).
+
+| Phase | Status | What |
+|---|---|---|
+| R0 — shell | ✅ | URL, pipeline, CSP, audit; a static sketch of the ring. |
+| R1 — model | | Segments, tokens, states, transitions, event log; pure reducer + tests; import of v1 boards. |
+| R2 — the ring | | Runway ring with tokens; drag between segments; one-handed swipe to advance (skipping allowed) / back; event log on the card; callsign keypad + recall. |
+| R3 — lanes and time | | Inbound (sequence, optional ETA) and outbound lanes; sequence numbers; timers; holding time; position profiles. |
+| R4 — attention | | Occupancy and vehicle-vs-traffic rules, stale, due, missed step; attention bar; tone (on by default, mutable). |
+| R5 — vehicles and layouts | | Vehicle rail with permission areas; runway templates; runway change; a second runway. |
+| R6 — record | | Per-flight log view, shift export (CSV + print), themes for day/night. |
 
 ---
 

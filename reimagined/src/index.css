@@ -1,0 +1,66 @@
+/* Design tokens shared in spirit with the v1 board; see ../docs/reimagined.md */
+:root {
+  --bg-board: #1b1f24;
+  --bg-panel: #22272e;
+  --chrome: #5c7a99;
+  --chrome-strong: #7a98b8;
+  --chrome-text: #d5dde6;
+  --chrome-text-muted: #8a97a6;
+  --danger: #c25a4a;
+
+  --strip-bg: #e4e4e1;
+  --strip-ink: #1f1e1b;
+  --strip-arrival: #f2c230;
+  --strip-departure: #2f5fa8;
+  --strip-other: #141618;
+  --strip-vehicle: #b8322a;
+  --strip-info: #e8b93d;
+
+  --font-data: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-ui: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --tap: 44px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg-board);
+  color: var(--chrome-text);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}

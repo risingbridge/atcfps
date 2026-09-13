@@ -14,6 +14,16 @@ feature must keep `npm run build` + the network tab silent after load.
 `npm run audit:local` (run in CI after the build) scans `dist/` for any
 outbound reference; `docs/local-only-audit.md` records the full method.
 
+## Two apps in one repo
+
+- The **strip board** (root) — the faithful version, phases 0–12, live at
+  `/atcfps/`.
+- The **reimagined flow board** (`reimagined/`) — a from-first-principles
+  successor (`docs/reimagined.md`), live at `/atcfps/reimagined/`. Own
+  `package.json`, own tests, built into `dist/reimagined/` by
+  `npm run build:all`. Both share `shared/vite-csp-plugin.mjs` and both
+  are audited. v1's service worker denylists the `/reimagined/` path.
+
 ## Commands
 
 ```
@@ -21,6 +31,7 @@ npm run dev       # Vite dev server (base path is /atcfps/)
 npm test          # vitest — reducer, storage, import parsing, time helpers
 npm run lint      # oxlint (must be clean; fix warnings, don't suppress)
 npm run build     # production build → dist/ (with CSP + service worker)
+npm run build:all # both apps → dist/ and dist/reimagined/
 npm run audit:local  # fail if dist/ could reach any host but its own
 npm run preview   # serve dist/ locally
 ```

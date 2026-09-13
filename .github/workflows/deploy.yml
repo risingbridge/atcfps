@@ -24,9 +24,12 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm --prefix reimagined ci
       - run: npm run lint
+      - run: npm --prefix reimagined run lint
       - run: npm test
-      - run: npm run build
+      - run: npm --prefix reimagined test
+      - run: npm run build:all
       - run: npm run audit:local
       # Requires Settings → Pages → Source: "GitHub Actions" (one-time, manual)
       - uses: actions/configure-pages@v5

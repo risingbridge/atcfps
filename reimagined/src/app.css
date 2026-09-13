@@ -1,0 +1,91 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: 60px;
+  padding: var(--s-2) var(--s-4);
+  padding-top: calc(var(--s-2) + env(safe-area-inset-top));
+  border-bottom: 1px solid var(--chrome);
+}
+
+.bar-title {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.bar-tag {
+  font-family: var(--font-data);
+  font-size: 12px;
+  color: var(--chrome-text-muted);
+  border: 1px solid var(--chrome);
+  border-radius: 3px;
+  padding: 2px 6px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.bar-link {
+  color: var(--chrome-text);
+  text-decoration: none;
+  min-height: var(--tap);
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--s-3);
+  border: 1px solid var(--chrome);
+  border-radius: 4px;
+}
+
+.stage {
+  flex: 1;
+  padding: var(--s-5) var(--s-4);
+  overflow: auto;
+}
+
+.ring {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  align-items: center;
+}
+
+.segment {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 56px;
+  padding: 0 var(--s-3);
+  background: var(--bg-panel);
+  border: 1px solid var(--chrome);
+  border-radius: 4px;
+  font-family: var(--font-data);
+  font-size: 15px;
+}
+
+.segment.is-runway {
+  border-width: 3px;
+  border-color: var(--strip-vehicle);
+  font-weight: 600;
+}
+
+.segment-loop {
+  border-style: dashed;
+  color: var(--chrome-text-muted);
+}
+
+.segment-arrow {
+  color: var(--chrome-text-muted);
+}
+
+.note {
+  max-width: 62ch;
+  margin-top: var(--s-5);
+  color: var(--chrome-text-muted);
+}

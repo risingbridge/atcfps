@@ -1,43 +1,53 @@
+import { useCallback, useMemo, useState } from 'react'
 import './app.css'
+import AttentionBar from './components/AttentionBar.jsx'
+import FlowDndContext from './components/FlowDndContext.jsx'
+import Lanes from './components/Lanes.jsx'
+import NewTokenSheet from './components/NewTokenSheet.jsx'
+import Ring from './components/Ring.jsx'
+import TokenCard from './components/TokenCard.jsx'
+import { useNow } from './hooks/useNow.js'
+import { actions, alerts, departureSequence, landingSequence } from './model/store.js'
+import { useRunway } from './state/storeContext.js'
 
-const RING = ['airborne', 'crosswind', 'downwind', 'base', 'final', 'short final', 'RUNWAY']
-
-/**
- * R0 shell: the URL exists, the pipeline works, and the ring is on screen
- * as a static sketch. Nothing here is interactive yet — see
- * docs/reimagined.md for what comes in R1–R6.
- */
 export default function App() {
+  const { runway, state, dispatch } = useRunway()
+  const now = useNow(1000)
+  const [openId, setOpenId] = useState(null)
+  const [creating, setCreating] = useState(false)
+  const closeCard = useCallback(() => setOpenId(null), [])
+  const closeNew = useCallback(() => setCreating(false), [])
+
+  const byPlace = useMemo(() => {
+    const m = {}
+    for (const t of Object.values(state.tokens)) (m[t.placeId] ??= []).push(t)
+    for (const k of Object.keys(m)) m[k].sort((a, b) => a.order - b.order)
+    return m
+  }, [state.tokens])
+
+  const seqById = useMemo(() => {
+    const m = {}
+    for (const { id, number } of landingSequence(state)) m[id] = number
+    for (const { id, number } of departureSequence(state)) m[id] = `D${number}`
+    return m
+  }, [state])
+
+  const alarmIds = useMemo(() => new Set(alerts(state, now).filter((a) => a.level === 'alarm').flatMap((a) => a.tokenIds)), [state, now])
+
+  const onSwipe = useCallback((token, dir) => dispatch(dir > 0 ? actions.advance(token.id) : actions.back(token.id)), [dispatch])
+  const onOpen = useCallback((token) => setOpenId(token.id), [])
+
   return (
     <div className="app">
-      <header className="bar">
-        <span className="bar-title">ATC Flow Board</span>
-        <span className="bar-tag">R0 · shell</span>
-        <span className="spacer" />
-        <a className="bar-link" href="/atcfps/">
-          ← the strip board
-        </a>
-      </header>
-
-      <main className="stage">
-        <section className="ring" aria-label="Runway ring (static sketch)">
-          {RING.map((seg, i) => (
-            <div key={seg} className={`segment ${seg === 'RUNWAY' ? 'is-runway' : ''}`}>
-              <span className="segment-name">{seg}</span>
-              {i < RING.length - 1 && <span className="segment-arrow">▸</span>}
-            </div>
-          ))}
-          <div className="segment segment-loop">
-            <span className="segment-arrow">↻</span>
-          </div>
-        </section>
-
-        <p className="note">
-          A strip is not a rectangle in a column; it is an object with a state on a process. The runway is a
-          ring so circuit traffic goes round; a gesture that changes the state is also the record of the
-          clearance. This page is the empty stage for that — the model comes first (R1), then the ring (R2).
-        </p>
-      </main>
+      <AttentionBar now={now} runway={runway} onNew={() => setCreating(true)} onFlip={() => dispatch(actions.flipRunway(runway.id))} />
+      <FlowDndContext>
+        <main className="stage">
+          <Ring runway={runway} byPlace={byPlace} seqById={seqById} now={now} onOpen={onOpen} onSwipe={onSwipe} alarmIds={alarmIds} />
+          <Lanes runway={runway} byPlace={byPlace} seqById={seqById} now={now} onOpen={onOpen} onSwipe={onSwipe} alarmIds={alarmIds} />
+        </main>
+      </FlowDndContext>
+      {openId && state.tokens[openId] && <TokenCard token={state.tokens[openId]} onClose={closeCard} />}
+      {creating && <NewTokenSheet onClose={closeNew} />}
     </div>
   )
 }

@@ -228,9 +228,11 @@ export function reducer(state, action) {
       const token = state.tokens[action.tokenId]
       const runway = active(state)
       if (!token || !placeById(runway, action.placeId)) return state
-      const sameSpot =
-        token.placeId === action.placeId && (action.index == null ? false : token.order === action.index)
-      if (sameSpot) return state
+      if (token.placeId === action.placeId) {
+        const count = tokensIn(state, action.placeId).length
+        const target = action.index == null ? count - 1 : Math.max(0, Math.min(action.index, count - 1))
+        if (target === token.order) return state
+      }
       return moveWithEvent(state, token, action.placeId, action.index, 'move', action.at)
     }
     case 'advance': {

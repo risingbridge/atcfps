@@ -792,7 +792,7 @@ v1 has been opened once (which updates the worker).
 |---|---|---|
 | R0 — shell | ✅ | URL, pipeline, CSP, audit; a static sketch of the ring. |
 | R1 — model | ✅ | `reimagined/src/model/`: runway template (places by kind, paths derived per intent, joins, areas, stale thresholds); tokens (ifr/vfr/vehicle/info, intent land/circuit/depart/none) with an event log; advance (skips allowed) / back / go-around (into the circuit) / move / transfer / remove; circuit count; timers; landing and departure sequence selectors; occupancy and attention rules; storage; v1 importer. 23 tests. |
-| R2 — the ring | | Runway ring with tokens; drag between segments; one-handed swipe to advance (skipping allowed) / back; event log on the card; callsign keypad + recall. |
+| R2 — the ring | ✅ | Ring laid out as two rows (flying row; ground/approach row with the runway in the middle, departures entering from the left, approach from the right, exits at the ends); lanes below. Tokens with sequence badges; drag between places (dnd-kit); fast horizontal swipe on touch = advance / back; tap = card with Back / Go-around / Advance, keypad-edited fields, transfer/remove, and the event log; "+ New" sheet: kind + intent, callsign keypad, recall from history. |
 | R3 — lanes and time | | Inbound (sequence, optional ETA) and outbound lanes; sequence numbers; timers; holding time; position profiles. |
 | R4 — attention | | Occupancy and vehicle-vs-traffic rules, stale, due, missed step; attention bar; tone (on by default, mutable). |
 | R5 — vehicles and layouts | | Vehicle rail with permission areas; runway templates; runway change; a second runway. |

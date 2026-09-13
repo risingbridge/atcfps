@@ -7,7 +7,9 @@ keep-screen-on toggle for iPad use.
 **Local-only.** Everything lives in your browser's `localStorage`. The app
 makes no network requests after loading — no analytics, no sync, no backend.
 A service worker caches the app itself so it opens offline; the production
-build ships a Content-Security-Policy that blocks any outbound request.
+build ships a Content-Security-Policy that blocks any outbound request, and
+`npm run audit:local` fails the build if anything outbound ever appears.
+See `docs/local-only-audit.md` for the full audit.
 
 ## Features
 

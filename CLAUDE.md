@@ -11,6 +11,8 @@ runtime. All state is in `localStorage`; the production build ships a CSP
 with `connect-src 'none'` (injected by `cspPlugin` in `vite.config.js`,
 build only — the dev server needs its HMR WebSocket). Any new dependency or
 feature must keep `npm run build` + the network tab silent after load.
+`npm run audit:local` (run in CI after the build) scans `dist/` for any
+outbound reference; `docs/local-only-audit.md` records the full method.
 
 ## Commands
 
@@ -19,6 +21,7 @@ npm run dev       # Vite dev server (base path is /atcfps/)
 npm test          # vitest — reducer, storage, import parsing, time helpers
 npm run lint      # oxlint (must be clean; fix warnings, don't suppress)
 npm run build     # production build → dist/ (with CSP + service worker)
+npm run audit:local  # fail if dist/ could reach any host but its own
 npm run preview   # serve dist/ locally
 ```
 

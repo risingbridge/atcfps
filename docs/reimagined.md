@@ -121,8 +121,13 @@ Entirely local rules over the state, evaluated every second:
   "cleared to land" recorded) is flagged, not blocked: the board never
   refuses a controller, it asks afterwards.
 
-Alerts are visual (bar + token pulse); an optional on-device tone, off
-by default.
+Alerts are visual (bar + token pulse) **and audible** — this is safety
+equipment, and a screen you are not looking at must still get your
+attention. The tone is generated on the device (Web Audio, no files, no
+network). Sound is **on by default** and can be muted in Settings; the
+mute state is shown in the attention bar so a silenced board is obvious.
+Only the runway-conflict class of alert sounds; "stale" and "timer due"
+stay visual.
 
 ### The record
 
@@ -195,10 +200,8 @@ audits, and the "verify on the real iPad" rule from this project.
   swipe may be repeated; the log records the transition that happened
   (e.g. "final → vacated") and the attention engine may *flag* a skipped
   step afterwards, never block it.
-- **Audible alerts:** to be decided — see below.
+- **Audible alerts: both tone and visual, because this is safety.** Sound
+  on by default, mutable in Settings, with the muted state visible on the
+  board. Runway-conflict alerts only; the rest stay visual.
 
-## 8. Still open
-
-- Is an audible alert acceptable, or visual only? Proposal: sound off by
-  default, switchable in Settings, and only for the runway-conflict
-  class of alert — never for "stale" or "timer due".
+All four questions are answered; R0 (the hands-on prototype) can start.

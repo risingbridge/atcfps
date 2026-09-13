@@ -52,10 +52,10 @@ Defaults I'll use unless told otherwise:
 
 ---
 
-> **Status (2026-09-13):** Phases 0–12 built and deployed. A second track,
-> the **reimagined flow board**, lives in `reimagined/` and deploys to
-> `/atcfps/reimagined/` — see the section at the end and
-> `docs/reimagined.md`.
+> **Status (2026-09-13):** Phases 0–12 built and deployed. The **reimagined
+> flow board** (`reimagined/`, R0–R6) is built and verified in Chromium;
+> pending push and a look on the real iPad — see the section at the end
+> and `docs/reimagined.md`.
 
 ## Phase 0 — Scaffold ✅
 
@@ -796,7 +796,7 @@ v1 has been opened once (which updates the worker).
 | R3 — lanes and time | ✅ | Optional ETA on tokens (shown in the inbound lane) with a one-tap "by ETA" re-sequence; +2/+5/+10 timers on the card, countdown on the token, blinking when due; holding time emphasised on tokens at the holding point, line up and runway; position profile (Tower + ground / Tower only) switches lanes. |
 | R4 — attention | ✅ | Alerts computed every second: two on the runway / runway occupied with traffic on short final (alarm), vehicle on runway with traffic on final, stale by place, timers due, skipped step (warn). Bar turns red and lists them; tapping one opens the token; alarm tokens pulse. Web Audio two-note chirp while any alarm stands, on by default, mute button shows the muted state, persisted. |
 | R5 — vehicles and layouts | ✅ | Vehicle permissions as big toggles on the card (areas + RUNWAY), shown as chips on the token; runway sheet: which end in use, places editor (rename, kind, reorder, add leg/step, remove; one runway enforced), vehicle areas, runways list (add a copy, remove, crossing toggle); active-runway select in the bar; tokens scoped to a runway with handover from the card; crossing runways share occupancy. 31 tests. |
-| R6 — record | | Per-flight log view, shift export (CSV + print), themes for day/night. |
+| R6 — record | ✅ | Record sheet: every completed token with its log, restore, clear; shift export as CSV (UTC rows, escaped) and a print stylesheet; themes indoor / day / night cycled from the bar, persisted. 32 tests. |
 
 ---
 

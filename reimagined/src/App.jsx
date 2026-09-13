@@ -1,9 +1,10 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import './app.css'
 import AttentionBar from './components/AttentionBar.jsx'
 import FlowDndContext from './components/FlowDndContext.jsx'
 import Lanes from './components/Lanes.jsx'
 import NewTokenSheet from './components/NewTokenSheet.jsx'
+import RecordSheet from './components/RecordSheet.jsx'
 import Ring from './components/Ring.jsx'
 import RunwaySheet from './components/RunwaySheet.jsx'
 import TokenCard from './components/TokenCard.jsx'
@@ -18,6 +19,11 @@ export default function App() {
   const [openId, setOpenId] = useState(null)
   const [creating, setCreating] = useState(false)
   const [runwayOpen, setRunwayOpen] = useState(false)
+  const [recordOpen, setRecordOpen] = useState(false)
+  const closeRecord = useCallback(() => setRecordOpen(false), [])
+  useEffect(() => {
+    document.documentElement.dataset.theme = state.settings.theme
+  }, [state.settings.theme])
   const closeCard = useCallback(() => setOpenId(null), [])
   const closeNew = useCallback(() => setCreating(false), [])
   const closeRunway = useCallback(() => setRunwayOpen(false), [])
@@ -58,6 +64,9 @@ export default function App() {
         sound={state.settings.sound}
         onSound={(sound) => dispatch(actions.setSettings({ sound }))}
         onFocus={(a) => a.tokenIds[0] && setOpenId(a.tokenIds[0])}
+        theme={state.settings.theme}
+        onTheme={(theme) => dispatch(actions.setSettings({ theme }))}
+        onRecord={() => setRecordOpen(true)}
       />
       <FlowDndContext>
         <main className="stage">
@@ -78,6 +87,7 @@ export default function App() {
       {openId && state.tokens[openId] && <TokenCard token={state.tokens[openId]} onClose={closeCard} />}
       {creating && <NewTokenSheet onClose={closeNew} />}
       {runwayOpen && <RunwaySheet onClose={closeRunway} />}
+      {recordOpen && <RecordSheet onClose={closeRecord} />}
     </div>
   )
 }

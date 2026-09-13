@@ -1,7 +1,9 @@
 import { formatClock } from '../lib/time.js'
 
 /** Clock, runway in use, and the "new token" button. Alerts arrive in R4. */
-export default function AttentionBar({ now, runway, runways, onRunway, profile, onProfile, onNew, onRunwaySettings, alerts, sound, onSound, onFocus }) {
+const THEMES = ['indoor', 'day', 'night']
+
+export default function AttentionBar({ now, runway, runways, onRunway, profile, onProfile, onNew, onRunwaySettings, alerts, sound, onSound, onFocus, theme, onTheme, onRecord }) {
   const { hm, s } = formatClock(now)
   const alarm = alerts.some((a) => a.level === 'alarm')
   return (
@@ -38,6 +40,12 @@ export default function AttentionBar({ now, runway, runways, onRunway, profile, 
         )}
       </div>
       <span className="spacer" />
+      <button className="btn" onClick={() => onTheme(THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length])} title="Theme: indoor / day / night">
+        {theme === 'day' ? '☀' : theme === 'night' ? '☾' : '◐'}
+      </button>
+      <button className="btn" onClick={onRecord} title="Record and export">
+        Record
+      </button>
       <button className={`btn ${sound ? '' : 'btn-danger'}`} onClick={() => onSound(!sound)} title={sound ? 'Sound on — tap to mute' : 'MUTED — tap to unmute'} aria-pressed={!sound}>
         {sound ? '🔔' : '🔕 muted'}
       </button>

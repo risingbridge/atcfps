@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { eventText } from '../lib/record.js'
 import { formatZulu } from '../lib/time.js'
 import { actions } from '../model/store.js'
 import { pathFor, placeById } from '../model/template.js'
@@ -16,19 +17,6 @@ const FIELDS = [
   ['stand', 'Stand'],
   ['eta', 'ETA'],
 ]
-
-const EVENT_TEXT = {
-  received: (e) => `received → ${e.to}`,
-  move: (e) => `${e.from} → ${e.to}`,
-  advance: (e) => `${e.from} → ${e.to}`,
-  back: (e) => `${e.from} ← ${e.to}`,
-  'go-around': (e) => `GO-AROUND from ${e.from}`,
-  transferred: (e) => `transferred${e.detail ? ` to ${e.detail}` : ''}`,
-  removed: () => 'removed',
-  field: (e) => e.detail,
-  timer: (e) => e.detail,
-  note: (e) => e.detail,
-}
 
 /** The expanded token: fields (keypad-edited), actions, and its log. */
 export default function TokenCard({ token, onClose }) {
@@ -154,7 +142,7 @@ export default function TokenCard({ token, onClose }) {
           {[...token.events].reverse().map((e, idx) => (
             <li key={idx} className={`log-item log-${e.type}`}>
               <span className="log-time">{formatZulu(e.at)}</span>
-              <span className="log-text">{(EVENT_TEXT[e.type] ?? (() => e.type))(e)}</span>
+              <span className="log-text">{eventText(e)}</span>
             </li>
           ))}
         </ol>

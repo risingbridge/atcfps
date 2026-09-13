@@ -56,4 +56,8 @@ A second app, `reimagined/`, is a from-first-principles redesign of the
 board for touch (see `docs/reimagined.md`): a strip is an object with a
 state on a process, the runway is a ring, and gestures are the record.
 It deploys alongside at https://risingbridge.github.io/atcfps/reimagined/
-and is built with the same local-only guarantees.
+and is built with the same local-only guarantees. Built so far: the ring
+with swipe/drag/tap, circuit traffic with sequence numbers, ETA, timers,
+an attention engine (runway occupancy, vehicles, stale, due, skipped
+steps) with an on-device alarm tone, runway editing and multiple runways,
+a per-flight record with CSV export, and day/night themes.

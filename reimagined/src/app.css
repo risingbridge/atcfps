@@ -347,3 +347,27 @@
 .place-row.is-runway .input { border-color: var(--strip-vehicle); font-weight: 600; }
 .btn-chip { font-family: var(--font-data); }
 .runway-chip { display: inline-flex; gap: 4px; align-items: center; }
+
+/* ---------- record ---------- */
+.sheet-tall { height: 90dvh; }
+.record-list { list-style: none; margin: 0; padding: 0; overflow: auto; flex: 1; }
+.record-row {
+  display: grid; grid-template-columns: 10px 1fr 1fr 150px 2fr; gap: var(--s-3); align-items: center;
+  width: 100%; min-height: 52px; padding: 4px 8px; background: transparent; border: 0; border-radius: 4px; color: var(--chrome-text); text-align: left; font-size: 14px;
+}
+.record-row:active { background: color-mix(in srgb, var(--chrome) 20%, transparent); }
+.record-frame { display: block; width: 10px; height: 36px; border-radius: 2px; background: var(--frame, var(--chrome)); }
+.record-callsign { font-family: var(--font-data); font-weight: 600; font-size: 16px; }
+.record-meta, .record-last { color: var(--chrome-text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.record-time { font-family: var(--font-data); }
+.record-item.is-open { background: color-mix(in srgb, var(--chrome) 10%, transparent); border-radius: 4px; }
+.record-details { padding: 0 var(--s-2) var(--s-2) 26px; }
+
+@media print {
+  .bar, .stage { display: none !important; }
+  .sheet { position: static; width: auto; height: auto; max-height: none; border: 0; background: #fff; color: #000; }
+  .sheet::backdrop { display: none; }
+  .record-row { min-height: 0; color: #000; }
+  .log-time { color: #000; }
+  .btn { display: none; }
+}

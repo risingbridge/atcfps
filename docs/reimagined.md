@@ -316,8 +316,12 @@ Round three (2026-09-13):
 - **Handoffs both ways** → *received* and *transferred* are states with
   times; *transferred* is the normal way a token leaves the board.
 
-R0 (the hands-on prototype) can start. What R0 must test, in order: the
-one-handed swipe-to-advance on the ring; circuit traffic going round
-with sequence numbers updating; a go-around; a vehicle on the runway
-while number 1 is on final (the alert); creating a VFR flight in two
-taps.
+**Built (2026-09-13):** R0–R6 exist in `reimagined/` and deploy to
+`/atcfps/reimagined/`. What was verified in Chromium at iPad size: swipe
+to advance / back; circuit traffic going round with the sequence
+following; go-around into the circuit; a vehicle cleared onto the runway
+while traffic is on short final (alarm, pulse, tone); VFR created in two
+taps from the keypad; ETA re-sequencing; timers; profiles; runway
+editing and a second, crossing runway; the record with CSV export;
+themes. What still needs the real iPad: the swipe under a real thumb,
+the long-press vs. flick distinction, and the tone through the speaker.

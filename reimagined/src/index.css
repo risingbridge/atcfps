@@ -64,3 +64,27 @@ button {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
+
+/* ---------- themes ---------- */
+:root[data-theme='day'] {
+  --bg-board: #f3f3ef;
+  --bg-panel: #ffffff;
+  --chrome: #4a6480;
+  --chrome-strong: #2f4a66;
+  --chrome-text: #14181d;
+  --chrome-text-muted: #4d5762;
+  --strip-bg: #ffffff;
+  --strip-ink: #111;
+}
+
+:root[data-theme='night'] {
+  --bg-board: #0c0e11;
+  --bg-panel: #14171b;
+  --chrome: #3f5266;
+  --chrome-strong: #55708c;
+  --chrome-text: #aab4bf;
+  --chrome-text-muted: #6d7883;
+  --danger: #b0473a;
+  --strip-bg: #b9b9b5;
+  --strip-ink: #101010;
+}

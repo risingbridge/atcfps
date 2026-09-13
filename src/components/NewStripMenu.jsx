@@ -23,7 +23,8 @@ export default function NewStripMenu({ bayId }) {
     e.preventDefault()
     if (!value.trim()) return
     dispatch(actions.createQuickStrip(board.id, bayId, mode, value))
-    setValue('') // stay open for the next one
+    setValue('')
+    close() // unmounting the input also dismisses the on-screen keyboard
   }
 
   if (mode && STRIP_TYPES[mode].quickAdd) {
@@ -40,7 +41,10 @@ export default function NewStripMenu({ bayId }) {
                 data-type={mode}
                 title={p.notes || undefined}
                 onPointerDown={(e) => e.preventDefault()} /* keep the input focused so its blur doesn't close us */
-                onClick={() => dispatch(actions.createPresetStrip(board.id, bayId, mode, p))}
+                onClick={() => {
+                  dispatch(actions.createPresetStrip(board.id, bayId, mode, p))
+                  close()
+                }}
               >
                 {p.label}
                 {p.notes && <span className="chip-note" aria-label="has a note">·</span>}

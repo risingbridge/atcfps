@@ -587,8 +587,9 @@ Calls I'll make:
 - **Export all boards** now includes `settings.vehicles`; importing such a
   file merges them (existing order first, then new names). A single-board
   export is unchanged.
-- Tapping a regular creates the strip and keeps the quick-add open, the
-  same as Enter does today, so several can be added in a row.
+- ~~Tapping a regular creates the strip and keeps the quick-add open~~
+  Changed after iPad use: creating a strip (Enter or a preset tap) now
+  **closes** the quick-add so the on-screen keyboard goes away.
 
 ### Build
 

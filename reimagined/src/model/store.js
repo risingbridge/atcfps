@@ -59,11 +59,12 @@ export function parseEta(text) {
   return h < 24 && min < 60 ? h * 60 + min : null
 }
 
-function baseToken(id, kind, placeId, at) {
+function baseToken(id, kind, placeId, at, runwayId) {
   return {
     id,
     kind,
     intent: 'none',
+    runwayId,
     placeId,
     order: 0,
     callsign: '',
@@ -125,6 +126,12 @@ export const actions = {
   sortInboundByEta: (at = now()) => ({ type: 'sortInboundByEta', at }),
 
   flipRunway: (runwayId, at = now()) => ({ type: 'flipRunway', runwayId, at }),
+  /** A new runway from the default template (or cloned from `fromId`), made active. */
+  addRunway: (name, reciprocal, fromId = null, id = makeId()) => ({ type: 'addRunway', name, reciprocal, fromId, id }),
+  removeRunway: (runwayId) => ({ type: 'removeRunway', runwayId }),
+  setActiveRunway: (runwayId) => ({ type: 'setActiveRunway', runwayId }),
+  /** Hand a token to another runway; it lands in that runway's inbound/outbound lane by intent. */
+  setTokenRunway: (tokenId, runwayId, at = now()) => ({ type: 'setTokenRunway', tokenId, runwayId, at }),
   updateRunway: (runwayId, patch) => ({ type: 'updateRunway', runwayId, patch }),
   setPlaces: (runwayId, places) => ({ type: 'setPlaces', runwayId, places }),
   setSettings: (patch) => ({ type: 'setSettings', patch }),
@@ -137,6 +144,11 @@ export const actions = {
 
 function active(state) {
   return state.runways[state.activeRunwayId]
+}
+
+/** Runway a token belongs to. */
+export function runwayOfToken(state, token) {
+  return state.runways[token.runwayId ?? state.activeRunwayId]
 }
 
 function defaultPlaceFor(kind) {
@@ -153,16 +165,21 @@ function withEvent(token, event) {
   return { ...token, events: [...token.events, event] }
 }
 
-/** Tokens in a place, in order. */
+/** Tokens of the active runway. */
+export function activeTokens(state) {
+  return Object.values(state.tokens).filter((t) => (t.runwayId ?? state.activeRunwayId) === state.activeRunwayId)
+}
+
+/** Tokens in a place on the active runway, in order. */
 export function tokensIn(state, placeId) {
-  return Object.values(state.tokens)
+  return activeTokens(state)
     .filter((t) => t.placeId === placeId)
     .sort((a, b) => a.order - b.order)
 }
 
-function reindex(tokens, placeId) {
+function reindex(tokens, placeId, runwayId) {
   const inPlace = Object.values(tokens)
-    .filter((t) => t.placeId === placeId)
+    .filter((t) => t.placeId === placeId && t.runwayId === runwayId)
     .sort((a, b) => a.order - b.order)
   const out = { ...tokens }
   inPlace.forEach((t, i) => {
@@ -174,7 +191,7 @@ function reindex(tokens, placeId) {
 /** Place `token` at `index` (null = end) within `placeId`, reindexing both places. */
 function place(tokens, token, placeId, index) {
   const others = Object.values(tokens)
-    .filter((t) => t.placeId === placeId && t.id !== token.id)
+    .filter((t) => t.placeId === placeId && t.runwayId === token.runwayId && t.id !== token.id)
     .sort((a, b) => a.order - b.order)
   const at = index == null ? others.length : Math.max(0, Math.min(index, others.length))
   const ordered = [...others.slice(0, at), token, ...others.slice(at)]
@@ -182,7 +199,7 @@ function place(tokens, token, placeId, index) {
   ordered.forEach((t, i) => {
     out[t.id] = { ...t, placeId, order: i }
   })
-  if (token.placeId !== placeId) out = reindex(out, token.placeId)
+  if (token.placeId !== placeId) out = reindex(out, token.placeId, token.runwayId)
   return out
 }
 
@@ -208,7 +225,7 @@ export function reducer(state, action) {
       if (!TOKEN_KINDS.includes(action.kind)) return state
       const placeId = action.placeId ?? defaultPlaceFor(action.kind)
       if (!placeById(active(state), placeId)) return state
-      let token = baseToken(action.id, action.kind, placeId, action.at)
+      let token = baseToken(action.id, action.kind, placeId, action.at, state.activeRunwayId)
       for (const f of TEXT_FIELDS) if (typeof action.fields[f] === 'string') token[f] = action.fields[f].trim()
       if (action.kind === 'vfr' && !token.squawk) token.squawk = '7000'
       if (Array.isArray(action.fields.permissions)) token.permissions = action.fields.permissions.slice()
@@ -338,10 +355,43 @@ export function reducer(state, action) {
       const inUse = r.inUse === r.name ? r.reciprocal : r.name
       return { ...state, runways: { ...state.runways, [r.id]: { ...r, inUse } } }
     }
+    case 'addRunway': {
+      const name = cleanText(action.name) || `RWY ${state.runwayOrder.length + 1}`
+      const base = action.fromId && state.runways[action.fromId] ? state.runways[action.fromId] : defaultRunway(action.id, name, cleanText(action.reciprocal))
+      const runway = { ...base, id: action.id, name, reciprocal: cleanText(action.reciprocal) || base.reciprocal, inUse: name, crossing: [] }
+      return { ...state, runways: { ...state.runways, [action.id]: runway }, runwayOrder: [...state.runwayOrder, action.id], activeRunwayId: action.id }
+    }
+    case 'removeRunway': {
+      if (!state.runways[action.runwayId] || state.runwayOrder.length <= 1) return state
+      const runwayOrder = state.runwayOrder.filter((id) => id !== action.runwayId)
+      const { [action.runwayId]: _r, ...runways } = state.runways
+      for (const r of Object.values(runways)) if (r.crossing?.includes(action.runwayId)) runways[r.id] = { ...r, crossing: r.crossing.filter((x) => x !== action.runwayId) }
+      // its tokens go to history as removed
+      let history = state.history
+      const tokens = {}
+      for (const t of Object.values(state.tokens)) {
+        if (t.runwayId === action.runwayId) history = [withEvent(t, { at: now(), type: 'removed', from: t.placeId, detail: 'runway removed' }), ...history]
+        else tokens[t.id] = t
+      }
+      const activeRunwayId = state.activeRunwayId === action.runwayId ? runwayOrder[0] : state.activeRunwayId
+      return { ...state, runways, runwayOrder, activeRunwayId, tokens, history: history.slice(0, HISTORY_LIMIT) }
+    }
+    case 'setActiveRunway':
+      return state.runways[action.runwayId] && state.activeRunwayId !== action.runwayId ? { ...state, activeRunwayId: action.runwayId } : state
+    case 'setTokenRunway': {
+      const token = state.tokens[action.tokenId]
+      if (!token || !state.runways[action.runwayId] || token.runwayId === action.runwayId) return state
+      const placeId = token.kind === 'vehicle' ? 'vehicles' : token.intent === 'depart' ? 'outbound' : token.intent === 'none' ? 'park' : 'inbound'
+      const moved = withEvent({ ...token, runwayId: action.runwayId, permissions: token.kind === 'vehicle' ? [] : token.permissions, lastMovedAt: action.at }, { at: action.at, type: 'move', from: token.placeId, to: placeId, detail: `to ${state.runways[action.runwayId].name}` })
+      const rest = reindex({ ...state.tokens, [token.id]: { ...token, placeId: '__moving__' } }, token.placeId, token.runwayId)
+      return { ...state, tokens: place(rest, moved, placeId, null) }
+    }
     case 'updateRunway': {
       const r = state.runways[action.runwayId]
       if (!r) return state
       const { id: _i, places: _p, ...patch } = action.patch ?? {}
+      if (Array.isArray(patch.crossing)) patch.crossing = patch.crossing.filter((x) => x !== r.id && state.runways[x])
+      if (Array.isArray(patch.areas)) patch.areas = [...new Set(patch.areas.map(cleanText).filter(Boolean))]
       return { ...state, runways: { ...state.runways, [r.id]: { ...r, ...patch } } }
     }
     case 'setPlaces': {
@@ -352,7 +402,7 @@ export function reducer(state, action) {
       // tokens in a place that disappeared go to park
       let tokens = state.tokens
       for (const t of Object.values(state.tokens)) {
-        if (!places.some((p) => p.id === t.placeId)) tokens = place(tokens, { ...t, placeId: 'park' }, 'park', null)
+        if (t.runwayId === r.id && !places.some((p) => p.id === t.placeId)) tokens = place(tokens, { ...t, placeId: 'park' }, 'park', null)
       }
       return { ...state, runways: { ...state.runways, [r.id]: { ...r, places } }, tokens }
     }
@@ -392,8 +442,12 @@ function goAround(state, token, at) {
 
 function leave(state, done) {
   const { [done.id]: _gone, ...rest } = state.tokens
-  const tokens = reindex(rest, done.placeId)
+  const tokens = reindex(rest, done.placeId, done.runwayId)
   return { ...state, tokens, history: [done, ...state.history].slice(0, HISTORY_LIMIT) }
+}
+
+function cleanText(v) {
+  return typeof v === 'string' ? v.trim() : ''
 }
 
 /** Places: unique string ids, names, known kinds, exactly one runway. Null if unusable. */
@@ -430,7 +484,7 @@ export function landingSequence(state) {
     // higher index = closer to the runway → lower rank; within a place keep order
     return (ring.length - i) * 100 + t.order
   }
-  return Object.values(state.tokens)
+  return activeTokens(state)
     .filter((t) => (t.intent === 'land' || t.intent === 'circuit') && rank(t) != null)
     .map((t) => ({ token: t, rank: rank(t) }))
     .sort((a, b) => a.rank - b.rank)
@@ -445,26 +499,32 @@ export function departureSequence(state) {
     const i = steps.indexOf(t.placeId)
     return i < 0 ? null : i * 100 + t.order
   }
-  return Object.values(state.tokens)
+  return activeTokens(state)
     .filter((t) => t.intent === 'depart' && rank(t) != null)
     .sort((a, b) => rank(a) - rank(b))
     .map((t, i) => ({ id: t.id, number: i + 1 }))
 }
 
-/** Who is on the runway right now: tokens in the runway place plus vehicles with runway permission. */
+/**
+ * Who is on the runway right now: tokens in the runway place plus vehicles
+ * with runway permission — on this runway and on any runway that crosses it.
+ */
 export function onRunway(state) {
   const runway = active(state)
-  const rwy = runwayPlaceId(runway)
-  return Object.values(state.tokens).filter(
-    (t) => t.placeId === rwy || (t.kind === 'vehicle' && t.permissions.includes(rwy)),
-  )
+  const ids = [runway.id, ...(runway.crossing ?? [])]
+  return Object.values(state.tokens).filter((t) => {
+    const r = state.runways[t.runwayId ?? state.activeRunwayId]
+    if (!r || !ids.includes(r.id)) return false
+    const rwy = runwayPlaceId(r)
+    return t.placeId === rwy || (t.kind === 'vehicle' && t.permissions.includes(rwy))
+  })
 }
 
 /** Tokens on short final (the last ring place before the runway). */
 export function onShortFinal(state) {
   const ring = ringOrder(active(state))
   const last = ring[ring.length - 2]
-  return Object.values(state.tokens).filter((t) => t.placeId === last)
+  return activeTokens(state).filter((t) => t.placeId === last)
 }
 
 /**
@@ -483,12 +543,12 @@ export function alerts(state, nowMs = Date.now()) {
     out.push({ id: 'short-final', level: 'alarm', text: 'Runway occupied, traffic on short final', tokenIds: [...occupants, ...shortFinal].map((t) => t.id) })
   }
   const ring = ringOrder(runway)
-  const onFinal = Object.values(state.tokens).filter((t) => ring.slice(ring.indexOf(runway.joins.land), -1).includes(t.placeId))
+  const onFinal = activeTokens(state).filter((t) => ring.slice(ring.indexOf(runway.joins.land), -1).includes(t.placeId))
   const vehiclesOnRwy = occupants.filter((t) => t.kind === 'vehicle')
   if (vehiclesOnRwy.length && onFinal.length && occupants.length <= 1) {
     out.push({ id: 'vehicle-final', level: 'warn', text: 'Vehicle on runway, traffic on final', tokenIds: [...vehiclesOnRwy, ...onFinal].map((t) => t.id) })
   }
-  for (const t of Object.values(state.tokens)) {
+  for (const t of activeTokens(state)) {
     // a transition that skipped a step on its path (e.g. final → runway without short final)
     const last = t.events[t.events.length - 1]
     if (last && (last.type === 'advance' || last.type === 'move') && last.from && last.to && t.intent !== 'none') {

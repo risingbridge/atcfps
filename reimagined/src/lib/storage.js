@@ -55,7 +55,9 @@ export function load(storage) {
   if (!state.runways[state.activeRunwayId]) state.activeRunwayId = state.runwayOrder[0]
   state.history = Array.isArray(state.history) ? state.history : []
   state.settings = { sound: true, theme: 'indoor', profile: 'combined', ...(state.settings ?? {}) }
+  for (const r of Object.values(state.runways)) r.crossing = Array.isArray(r.crossing) ? r.crossing : []
   for (const t of Object.values(state.tokens)) {
+    t.runwayId = state.runways[t.runwayId] ? t.runwayId : state.activeRunwayId
     t.events = Array.isArray(t.events) ? t.events : []
     t.timers = Array.isArray(t.timers) ? t.timers : []
     t.permissions = Array.isArray(t.permissions) ? t.permissions : []

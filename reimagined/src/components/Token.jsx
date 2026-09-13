@@ -87,8 +87,16 @@ function TokenView({ token, seq, now, onOpen, onSwipe, alarm = false, sortable =
         )}
       </div>
       <div className="token-row token-row-2">
-        {token.kind === 'vehicle' || token.kind === 'info' ? (
-          <span className="token-field token-grow">{token.remarks || (token.kind === 'vehicle' ? token.permissions.join(' · ') || 'no permissions' : '')}</span>
+        {token.kind === 'vehicle' ? (
+          <span className="token-field token-grow token-perms">
+            {token.permissions.length === 0
+              ? 'no clearance'
+              : token.permissions.map((p) => (
+                  <span key={p} className={`perm ${p === 'runway' ? 'perm-runway' : ''}`}>{p === 'runway' ? 'RWY' : p}</span>
+                ))}
+          </span>
+        ) : token.kind === 'info' ? (
+          <span className="token-field token-grow">{token.remarks}</span>
         ) : (
           <>
             <span className="token-field">{token.type || '—'}</span>

@@ -242,3 +242,42 @@ describe('ETA', () => {
     expect(run(s, A.sortInboundByEta(T(2)))).toBe(s)
   })
 })
+
+describe('runways', () => {
+  it('addRunway makes a second runway active; tokens are scoped to their runway', () => {
+    let s = run(S0(), A.createToken('ifr', { callsign: 'A' }, null, 'a', T(0)), A.addRunway('12', '30', null, 'r2'))
+    expect(s.activeRunwayId).toBe('r2')
+    expect(tokensIn(s, 'inbound')).toEqual([])
+    s = run(s, A.createToken('ifr', { callsign: 'B' }, null, 'b', T(0)))
+    expect(tokensIn(s, 'inbound').map((t) => t.callsign)).toEqual(['B'])
+    s = run(s, A.setActiveRunway('r'))
+    expect(tokensIn(s, 'inbound').map((t) => t.callsign)).toEqual(['A'])
+    expect(seq(s)).toEqual(['1:A'])
+  })
+
+  it('setTokenRunway hands a token over into the other runway\'s lane', () => {
+    let s = run(S0(), A.createToken('ifr', { callsign: 'A' }, null, 'a', T(0)), A.addRunway('12', '30', null, 'r2'), A.setActiveRunway('r'))
+    s = run(s, A.setTokenRunway('a', 'r2', T(1)))
+    expect(s.tokens.a).toMatchObject({ runwayId: 'r2', placeId: 'inbound', order: 0 })
+    expect(s.tokens.a.events.at(-1)).toMatchObject({ type: 'move', detail: 'to 12' })
+    expect(tokensIn(s, 'inbound')).toEqual([])
+  })
+
+  it('crossing runways share occupancy', () => {
+    let s = run(S0(), A.addRunway('12', '30', null, 'r2'), A.updateRunway('r', { crossing: ['r2'] }))
+    s = run(s, A.setActiveRunway('r2'), A.createToken('ifr', { callsign: 'X' }, null, 'x', T(0)), A.advance('x', 1, T(0)), A.advance('x', 1, T(0)), A.advance('x', 1, T(0))) // X on r2's runway
+    s = run(s, A.setActiveRunway('r'), A.createToken('ifr', { callsign: 'A' }, null, 'a', T(0)), A.advance('a', 1, T(0)), A.advance('a', 1, T(0)))
+    expect(onRunway(s).map((t) => t.callsign)).toEqual(['X'])
+    expect(alerts(s, Date.parse(T(0))).map((x) => x.id)).toEqual(['short-final'])
+  })
+
+  it('removeRunway keeps at least one and retires its tokens to history', () => {
+    let s = run(S0(), A.addRunway('12', '30', null, 'r2'), A.createToken('ifr', { callsign: 'B' }, null, 'b', T(0)))
+    expect(run(S0(), A.removeRunway('r'))).toEqual(S0())
+    s = run(s, A.removeRunway('r2'))
+    expect(s.runwayOrder).toEqual(['r'])
+    expect(s.activeRunwayId).toBe('r')
+    expect(s.tokens.b).toBeUndefined()
+    expect(s.history[0]).toMatchObject({ id: 'b' })
+  })
+})

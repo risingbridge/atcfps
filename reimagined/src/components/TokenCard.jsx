@@ -3,6 +3,7 @@ import { formatZulu } from '../lib/time.js'
 import { actions } from '../model/store.js'
 import { pathFor, placeById } from '../model/template.js'
 import { useRunway } from '../state/storeContext.js'
+import { runwayPlaceId } from '../model/template.js'
 import Keypad from './Keypad.jsx'
 
 const FIELDS = [
@@ -31,7 +32,7 @@ const EVENT_TEXT = {
 
 /** The expanded token: fields (keypad-edited), actions, and its log. */
 export default function TokenCard({ token, onClose }) {
-  const { runway, dispatch } = useRunway()
+  const { runway, state, dispatch } = useRunway()
   const ref = useRef(null)
   const [editing, setEditing] = useState(null) // field key
   const [draft, setDraft] = useState('')
@@ -93,6 +94,21 @@ export default function TokenCard({ token, onClose }) {
           </div>
         )}
 
+        {token.kind === 'vehicle' && (
+          <div className="card-permissions" role="group" aria-label="Permissions">
+            <span className="entry-label">Cleared into</span>
+            {[...runway.areas, runwayPlaceId(runway)].map((area) => {
+              const on = token.permissions.includes(area)
+              const isRwy = area === runwayPlaceId(runway)
+              return (
+                <button key={area} className={`btn btn-big-chip ${on ? (isRwy ? 'is-on-runway' : 'is-on') : ''}`} aria-pressed={on} onClick={() => dispatch(actions.setPermissions(token.id, on ? token.permissions.filter((p) => p !== area) : [...token.permissions, area]))}>
+                  {isRwy ? `RUNWAY ${runway.inUse}` : area}
+                </button>
+              )
+            })}
+          </div>
+        )}
+
         <div className="card-fields">
           {(flight ? FIELDS : [['callsign', token.kind === 'vehicle' ? 'Vehicle' : 'Message']]).map(([key, label]) => (
             <button key={key} type="button" className={`entry-field ${editing === key ? 'is-active' : ''}`} onClick={() => { setEditing(key); setDraft(token[key] ?? '') }}>
@@ -118,6 +134,14 @@ export default function TokenCard({ token, onClose }) {
         </div>
 
         <div className="card-foot">
+          {state.runwayOrder.length > 1 && (
+            <select className="select" value={token.runwayId} onChange={(e) => { dispatch(actions.setTokenRunway(token.id, e.target.value)); ref.current.close() }} aria-label="Runway">
+              {state.runwayOrder.map((id) => (
+                <option key={id} value={id}>RWY {state.runways[id].name}/{state.runways[id].reciprocal}</option>
+              ))}
+            </select>
+          )}
+          <span className="spacer" />
           <button className="btn btn-quiet" onClick={() => { dispatch(actions.transfer(token.id)); ref.current.close() }}>
             Transfer
           </button>

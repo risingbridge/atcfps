@@ -57,6 +57,8 @@ export function defaultRunway(id, name = '01', reciprocal = '19') {
     areas: ['TWY A', 'TWY B'],
     /** Minutes before a token in a place is flagged stale (null = never). */
     staleAfter: { hold: 10, lineup: 3, runway: 3, inbound: null, outbound: null },
+    /** Ids of runways that cross this one (occupancy is shared). */
+    crossing: [],
   }
 }
 

@@ -1,7 +1,7 @@
 import { formatClock } from '../lib/time.js'
 
 /** Clock, runway in use, and the "new token" button. Alerts arrive in R4. */
-export default function AttentionBar({ now, runway, profile, onProfile, onNew, onFlip, alerts, sound, onSound, onFocus }) {
+export default function AttentionBar({ now, runway, runways, onRunway, profile, onProfile, onNew, onRunwaySettings, alerts, sound, onSound, onFocus }) {
   const { hm, s } = formatClock(now)
   const alarm = alerts.some((a) => a.level === 'alarm')
   return (
@@ -11,8 +11,15 @@ export default function AttentionBar({ now, runway, profile, onProfile, onNew, o
         <span className="clock-s">:{s}</span>
         <span className="clock-z">Z</span>
       </time>
-      <button className="btn" onClick={onFlip} title="Change runway in use">
-        RWY {runway.inUse}
+      {runways.length > 1 ? (
+        <select className="select" value={runway.id} onChange={(e) => onRunway(e.target.value)} aria-label="Active runway">
+          {runways.map((r) => (
+            <option key={r.id} value={r.id}>RWY {r.inUse}</option>
+          ))}
+        </select>
+      ) : null}
+      <button className="btn" onClick={onRunwaySettings} title="Runway settings">
+        RWY {runway.inUse} ⚙
       </button>
       <select className="select" value={profile} onChange={(e) => onProfile(e.target.value)} aria-label="Position profile" title="Which lanes are shown">
         <option value="combined">Tower + ground</option>

@@ -327,3 +327,23 @@
 .log-item { display: flex; gap: var(--s-3); padding: 6px 0; font-size: 14px; border-bottom: 1px solid color-mix(in srgb, var(--chrome) 20%, transparent); }
 .log-time { font-family: var(--font-data); color: var(--chrome-text-muted); }
 .log-go-around .log-text { color: var(--danger); font-weight: 600; }
+
+/* ---------- vehicles ---------- */
+.token-perms { display: flex; gap: 4px; flex-wrap: wrap; }
+.perm { padding: 0 6px; border-radius: 3px; background: color-mix(in srgb, var(--strip-ink) 12%, transparent); font-size: 12px; }
+.perm-runway { background: var(--strip-vehicle); color: #fff; font-weight: 600; }
+.card-permissions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
+.btn-big-chip { min-height: 52px; font-family: var(--font-data); font-weight: 600; }
+.btn-big-chip.is-on { background: var(--chrome); color: #fff; }
+.btn-big-chip.is-on-runway { background: var(--strip-vehicle); border-color: var(--strip-vehicle); color: #fff; }
+
+/* ---------- runway sheet ---------- */
+.section-title { margin: 0 0 4px; font-size: 15px; font-weight: 500; }
+.help { margin: 0 0 var(--s-2); font-size: 13px; color: var(--chrome-text-muted); }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); margin-top: var(--s-2); }
+.input { min-height: var(--tap); padding: 6px 12px; background: #14171b; border: 1px solid var(--chrome); border-radius: 4px; color: var(--chrome-text); font-size: 16px; min-width: 0; }
+.place-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.place-row { display: grid; grid-template-columns: 1fr 160px 44px 44px 44px; gap: 6px; align-items: center; }
+.place-row.is-runway .input { border-color: var(--strip-vehicle); font-weight: 600; }
+.btn-chip { font-family: var(--font-data); }
+.runway-chip { display: inline-flex; gap: 4px; align-items: center; }

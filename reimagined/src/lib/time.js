@@ -22,3 +22,19 @@ export function formatMinutes(min) {
   const m = min % 60
   return m ? `${h}h${pad(m)}` : `${h}h`
 }
+
+/** The next timer to fire (or the most overdue): { at, label, remainingMs, due }. */
+export function soonestTimer(timers, now = Date.now()) {
+  if (!timers?.length) return null
+  const sorted = [...timers].sort((a, b) => Date.parse(a.at) - Date.parse(b.at))
+  const t = sorted[0]
+  const remainingMs = Date.parse(t.at) - now
+  return { ...t, remainingMs, due: remainingMs <= 0 }
+}
+
+/** "m:ss" for short countdowns, "h:mm" beyond an hour. */
+export function formatCountdown(ms) {
+  const s = Math.max(0, Math.round(ms / 1000))
+  if (s >= 3600) return `${Math.floor(s / 3600)}:${pad(Math.floor((s % 3600) / 60))}h`
+  return `${Math.floor(s / 60)}:${pad(s % 60)}`
+}

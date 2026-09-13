@@ -13,6 +13,7 @@ const FIELDS = [
   ['wake', 'Wake'],
   ['runway', 'Runway'],
   ['stand', 'Stand'],
+  ['eta', 'ETA'],
 ]
 
 const EVENT_TEXT = {
@@ -101,6 +102,20 @@ export default function TokenCard({ token, onClose }) {
           ))}
         </div>
         {editing && <Keypad value={draft} onChange={setDraft} onDone={commitField} doneLabel="Set" />}
+
+        <div className="card-timers">
+          <span className="entry-label">Timer</span>
+          {[2, 5, 10].map((m) => (
+            <button key={m} className="btn" onClick={() => dispatch(actions.addTimer(token.id, new Date(Date.now() + m * 60_000).toISOString(), `+${m} min`))}>
+              +{m}
+            </button>
+          ))}
+          {token.timers.map((t) => (
+            <button key={t.id} className="btn btn-quiet timer-chip" onClick={() => dispatch(actions.clearTimer(token.id, t.id))} title="Tap to clear">
+              ⏱ {formatZulu(t.at)} {t.label} ✕
+            </button>
+          ))}
+        </div>
 
         <div className="card-foot">
           <button className="btn btn-quiet" onClick={() => { dispatch(actions.transfer(token.id)); ref.current.close() }}>

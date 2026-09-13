@@ -48,7 +48,16 @@ const now = () => new Date().toISOString()
 export const TOKEN_KINDS = ['ifr', 'vfr', 'vehicle', 'info']
 export const INTENTS = ['land', 'circuit', 'depart', 'none']
 
-const TEXT_FIELDS = ['callsign', 'type', 'wake', 'runway', 'stand', 'squawk', 'clearedLevel', 'remarks']
+const TEXT_FIELDS = ['callsign', 'type', 'wake', 'runway', 'stand', 'squawk', 'clearedLevel', 'remarks', 'eta']
+
+/** "HHMM" or "HH:MM" (UTC) → minutes since midnight, else null. */
+export function parseEta(text) {
+  const m = /^(\d{2}):?(\d{2})$/.exec(String(text ?? '').trim())
+  if (!m) return null
+  const h = Number(m[1])
+  const min = Number(m[2])
+  return h < 24 && min < 60 ? h * 60 + min : null
+}
 
 function baseToken(id, kind, placeId, at) {
   return {
@@ -65,6 +74,7 @@ function baseToken(id, kind, placeId, at) {
     squawk: kind === 'vfr' ? '7000' : '',
     clearedLevel: '',
     remarks: '',
+    eta: '',
     permissions: [],
     circuits: 0,
     timers: [],
@@ -111,6 +121,8 @@ export const actions = {
   clearTimer: (tokenId, timerId) => ({ type: 'clearTimer', tokenId, timerId }),
   addNote: (tokenId, text, at = now()) => ({ type: 'addNote', tokenId, text, at }),
   setPermissions: (tokenId, permissions, at = now()) => ({ type: 'setPermissions', tokenId, permissions, at }),
+  /** Reorder the inbound lane by ETA (tokens without an ETA keep their relative order, after those with one). */
+  sortInboundByEta: (at = now()) => ({ type: 'sortInboundByEta', at }),
 
   flipRunway: (runwayId, at = now()) => ({ type: 'flipRunway', runwayId, at }),
   updateRunway: (runwayId, patch) => ({ type: 'updateRunway', runwayId, patch }),
@@ -308,6 +320,18 @@ export function reducer(state, action) {
       return { ...state, tokens: { ...state.tokens, [token.id]: next } }
     }
 
+    case 'sortInboundByEta': {
+      const inbound = tokensIn(state, 'inbound')
+      const withEta = inbound.filter((t) => parseEta(t.eta) != null).sort((a, b) => parseEta(a.eta) - parseEta(b.eta) || a.order - b.order)
+      const without = inbound.filter((t) => parseEta(t.eta) == null)
+      const ordered = [...withEta, ...without]
+      if (ordered.every((t, i) => t.id === inbound[i].id)) return state
+      const tokens = { ...state.tokens }
+      ordered.forEach((t, i) => {
+        if (t.order !== i) tokens[t.id] = withEvent({ ...t, order: i }, { at: action.at, type: 'move', from: 'inbound', to: 'inbound', detail: 'sorted by ETA' })
+      })
+      return { ...state, tokens }
+    }
     case 'flipRunway': {
       const r = state.runways[action.runwayId]
       if (!r) return state

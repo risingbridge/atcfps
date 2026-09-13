@@ -1,7 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useRef } from 'react'
-import { formatMinutes, minutesSince } from '../lib/time.js'
+import { formatCountdown, formatMinutes, minutesSince, soonestTimer } from '../lib/time.js'
 
 const KIND_ICON = { ifr: '✈', vfr: '✈', vehicle: '⛟', info: 'ⓘ' }
 
@@ -49,6 +49,8 @@ function TokenView({ token, seq, now, onOpen, onSwipe, alarm = false, sortable =
     : undefined
   const minutes = now != null ? minutesSince(token.lastMovedAt, now) : null
   const frame = token.kind === 'vehicle' ? 'vehicle' : token.kind === 'info' ? 'info' : token.intent
+  const timer = now != null ? soonestTimer(token.timers, now) : null
+  const waiting = token.placeId === 'hold' || token.placeId === 'lineup' || token.placeId === 'runway'
 
   return (
     <div
@@ -78,6 +80,11 @@ function TokenView({ token, seq, now, onOpen, onSwipe, alarm = false, sortable =
             ↻{token.circuits}
           </span>
         )}
+        {token.eta && token.placeId === 'inbound' && (
+          <span className="token-eta" title="ETA">
+            {token.eta}
+          </span>
+        )}
       </div>
       <div className="token-row token-row-2">
         {token.kind === 'vehicle' || token.kind === 'info' ? (
@@ -90,7 +97,12 @@ function TokenView({ token, seq, now, onOpen, onSwipe, alarm = false, sortable =
             <span className="token-field token-grow" />
           </>
         )}
-        {minutes != null && <span className="token-age">{formatMinutes(minutes)}</span>}
+        {timer && (
+          <span className={`token-timer ${timer.due ? 'is-due' : ''}`} title={timer.label || 'timer'}>
+            ⏱ {timer.due ? 'DUE' : formatCountdown(timer.remainingMs)}
+          </span>
+        )}
+        {minutes != null && <span className={`token-age ${waiting ? 'is-waiting' : ''}`}>{formatMinutes(minutes)}</span>}
       </div>
     </div>
   )

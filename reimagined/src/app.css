@@ -132,6 +132,10 @@
   gap: var(--s-2);
 }
 
+.lanes[data-lanes='3'] {
+  grid-template-columns: 1.4fr 0.8fr 1fr;
+}
+
 .cell-lane { min-height: 120px; }
 .cell-lane .cell-list { flex-direction: row; flex-wrap: wrap; align-content: flex-start; }
 .cell-lane .token { width: 100%; }
@@ -189,6 +193,15 @@
 .token-level { font-weight: 600; color: var(--strip-ink); }
 .token-grow { flex: 1; min-width: 0; }
 .token-age { font-size: 11px; color: color-mix(in srgb, var(--strip-ink) 65%, transparent); }
+.token-age.is-waiting { font-size: 13px; font-weight: 600; color: var(--strip-ink); }
+.token-eta { font-size: 13px; font-weight: 600; color: var(--strip-ink); }
+.token-timer { font-size: 12px; font-weight: 600; color: #6e4100; }
+.token-timer.is-due { color: var(--danger); animation: blink 1s steps(2) infinite; }
+@keyframes blink { 50% { opacity: 0.3; } }
+
+.btn-small { min-height: 32px; padding: 2px 8px; font-size: 12px; }
+.card-timers { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
+.timer-chip { font-family: var(--font-data); font-size: 13px; }
 
 /* ---------- controls ---------- */
 .btn {

@@ -39,11 +39,28 @@ export default function App() {
 
   return (
     <div className="app">
-      <AttentionBar now={now} runway={runway} onNew={() => setCreating(true)} onFlip={() => dispatch(actions.flipRunway(runway.id))} />
+      <AttentionBar
+        now={now}
+        runway={runway}
+        profile={state.settings.profile}
+        onProfile={(profile) => dispatch(actions.setSettings({ profile }))}
+        onNew={() => setCreating(true)}
+        onFlip={() => dispatch(actions.flipRunway(runway.id))}
+      />
       <FlowDndContext>
         <main className="stage">
           <Ring runway={runway} byPlace={byPlace} seqById={seqById} now={now} onOpen={onOpen} onSwipe={onSwipe} alarmIds={alarmIds} />
-          <Lanes runway={runway} byPlace={byPlace} seqById={seqById} now={now} onOpen={onOpen} onSwipe={onSwipe} alarmIds={alarmIds} />
+          <Lanes
+            runway={runway}
+            byPlace={byPlace}
+            seqById={seqById}
+            now={now}
+            onOpen={onOpen}
+            onSwipe={onSwipe}
+            alarmIds={alarmIds}
+            show={state.settings.profile === 'tower' ? ['inbound', 'park', 'vehicles'] : null}
+            onSortByEta={() => dispatch(actions.sortInboundByEta())}
+          />
         </main>
       </FlowDndContext>
       {openId && state.tokens[openId] && <TokenCard token={state.tokens[openId]} onClose={closeCard} />}

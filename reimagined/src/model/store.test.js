@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { actions as A, alerts, departureSequence, initialState, landingSequence, onRunway, reducer, tokensIn } from './store.js'
+import { actions as A, alerts, departureSequence, initialState, landingSequence, onRunway, parseEta, reducer, tokensIn } from './store.js'
 import { pathFor } from './template.js'
 
 const T = (m) => `2026-09-13T10:${String(m).padStart(2, '0')}:00.000Z`
@@ -202,5 +202,27 @@ describe('runway config', () => {
     expect(tok(s, 'a').placeId).toBe('park')
     expect(pathFor(s.runways.r, 'land')).toEqual(['inbound', 'final', 'runway', 'vacated'])
     expect(run(s, A.setPlaces('r', places.filter((p) => p.kind !== 'runway')))).toBe(s) // must keep one runway
+  })
+})
+
+describe('ETA', () => {
+  it('parseEta accepts HHMM and HH:MM', () => {
+    expect(parseEta('1432')).toBe(872)
+    expect(parseEta('14:32')).toBe(872)
+    expect(parseEta('2460')).toBeNull()
+    expect(parseEta('')).toBeNull()
+  })
+
+  it('sortInboundByEta reorders the lane and the landing sequence follows', () => {
+    let s = run(
+      S0(),
+      A.createToken('ifr', { callsign: 'A', eta: '1450' }, null, 'a', T(0)),
+      A.createToken('ifr', { callsign: 'B' }, null, 'b', T(0)),
+      A.createToken('ifr', { callsign: 'C', eta: '1440' }, null, 'c', T(0)),
+    )
+    expect(seq(s)).toEqual(['1:A', '2:B', '3:C'])
+    s = run(s, A.sortInboundByEta(T(1)))
+    expect(seq(s)).toEqual(['1:C', '2:A', '3:B'])
+    expect(run(s, A.sortInboundByEta(T(2)))).toBe(s)
   })
 })

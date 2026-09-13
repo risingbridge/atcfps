@@ -113,6 +113,20 @@ landing order across circuit and straight-in traffic together ("number
 inbound lane re-sequences; numbers recompute as aircraft land or go
 around. The attention bar shows who is *next*.
 
+### One hand, on a desk
+
+The iPad lies flat and the other hand is on the radio. So:
+
+- Every routine action is **one-handed**: swipe to advance (skipping
+  states allowed), tap to expand, thumb-reachable controls along the
+  bottom edge. Two-finger gestures exist only for rare things (runway
+  change) and always have a menu equivalent.
+- Drags are short: the ring is laid out so the next segment is never far
+  from the current one, and a token can be advanced without lifting it
+  across the screen.
+- Nothing important lives in a corner a thumb cannot reach from the
+  bottom half.
+
 ### Gestures that are the record
 
 | Gesture | Meaning | What gets recorded |
@@ -128,6 +142,13 @@ around. The attention bar shows who is *next*.
 The essential idea: the controller never "writes down" a clearance. They
 *give* it, on the token, and the log line, timestamp and state change are
 the same action. The paper-era "then annotate the strip" step disappears.
+
+### Three lights
+
+Bright daylight, night and normal indoor all happen. Three themes, one
+tap apart in the attention bar and remembered: **day** (light, high
+contrast), **indoor** (today's charcoal) and **night** (dimmed, alerts
+in a red that does not blind). Contrast is audited per theme, as today.
 
 ### Entry: almost no typing
 
@@ -180,12 +201,22 @@ mute state is shown in the attention bar so a silenced board is obvious.
 Only the runway-conflict class of alert sounds; "stale" and "timer due"
 stay visual.
 
+### Handoffs
+
+Aircraft come from and go to other positions (approach, ground, the next
+sector), even though nothing is networked. **Received** and
+**Transferred** are states with a time on the token — the first and last
+lines of its log — and *transferred* is how a token leaves the board in
+the normal case, distinct from *removed*.
+
 ### The record
 
 Every state change is an event: `{ token, from, to, at }`. The archive
-becomes a per-flight **log** — what was cleared, when, in order — and a
-per-shift export. No free text needed for the common case; remarks stay
-for the rest.
+becomes a per-flight **log** — what was cleared, when, in order, from
+*received* to *transferred* — kept for personal review on the device and
+exportable as a **clean per-shift record** (CSV, and a printable page)
+for the cases where a formal record must be retained. No free text needed
+for the common case; remarks stay for the rest.
 
 ### Escape hatches (this is where structured systems usually fail)
 
@@ -273,4 +304,20 @@ Round two (2026-09-13):
   the entry section (recall, callsign keypad) and gestures-as-record are
   the highest-value parts of the concept, and should be in R2, not later.
 
-R0 (the hands-on prototype) can start.
+Round three (2026-09-13):
+
+- **Flat on the desk, one hand free** → one-handed gestures for every
+  routine action; controls along the bottom edge; short drags around the
+  ring.
+- **Daylight, night and indoor** → three themes, one tap apart, each
+  contrast-audited.
+- **Log is for personal review and a formal record** → on-device history
+  per flight plus a clean per-shift export (CSV + printable).
+- **Handoffs both ways** → *received* and *transferred* are states with
+  times; *transferred* is the normal way a token leaves the board.
+
+R0 (the hands-on prototype) can start. What R0 must test, in order: the
+one-handed swipe-to-advance on the ring; circuit traffic going round
+with sequence numbers updating; a go-around; a vehicle on the runway
+while number 1 is on final (the alert); creating a VFR flight in two
+taps.

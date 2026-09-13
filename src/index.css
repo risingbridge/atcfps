@@ -8,23 +8,28 @@
   --ink: #22201c;
   --ink-muted: #6b665c;
 
-  /* strip colours — coloured strip paper, text flips per background */
-  --strip-arrival-bg: #f2c230;
+  /*
+   * strip colours (Phase 11): every strip is light grey with dark ink; the
+   * type colour is the frame. A highlight tints the background.
+   */
+  --strip-bg: #e4e4e1;
+  --strip-ink: #1f1e1b;
+  --strip-arrival: #f2c230;
+  --strip-departure: #2f5fa8;
+  --strip-other: #141618;
+  --strip-vehicle: #b8322a;
+  --strip-info: #e8b93d;
+  /* the same colours, as used for chips/segments with white or ink text */
   --strip-arrival-fg: #22201c;
-  --strip-departure-bg: #2f5fa8;
   --strip-departure-fg: #ffffff;
-  --strip-other-bg: #141618;
   --strip-other-fg: #f0ece2;
-  --strip-other-border: #3e444c;
-  --strip-vehicle-bg: #b8322a;
   --strip-vehicle-fg: #ffffff;
-  --strip-info-bg: #f3e6be;
   --strip-info-fg: #22201c;
 
   /* per-type accents (icons, type buttons) */
   --accent-flight: var(--paper);
   --accent-info: #e8b93d;
-  --accent-vehicle: var(--strip-vehicle-bg);
+  --accent-vehicle: var(--strip-vehicle);
 
   /* chrome */
   --chrome: #5c7a99;

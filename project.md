@@ -181,15 +181,16 @@ Grounded in the real object rather than a generic Kanban look:
 - **Board background:** dark control-room charcoal (`#1B1F24`)
 - **Strip "paper" base:** warm off-white (`#F0ECE2`), ink text near-black
   (`#22201C`) — literal paper-strip reference
-- **Strip colours (Phase 5, supersedes the original per-type accents):**
-  full-colour strips like real coloured strip paper, text colour flips
-  per background:
-  - Flight, arrival — yellow (`#F2C230`), ink text
-  - Flight, departure — blue (`#2F5FA8`), white text
-  - Flight, other — black (`#141618`) with a thin light border, paper text
-  - Vehicle — red (`#B8322A`), white text
-  - Info — light amber-tinted paper (`#F3E6BE`), ink text
-  - Manual highlight — left-edge stripe only, never recolours the body
+- **Strip colours (Phase 11, supersedes Phase 5):** every strip is light
+  grey (`#E4E4E1`) with dark ink; the type colour is the **frame** (3px
+  all round, 8px left edge):
+  - Flight, arrival — yellow (`#F2C230`)
+  - Flight, departure — blue (`#2F5FA8`)
+  - Flight, other — black (`#141618`)
+  - Vehicle — red (`#B8322A`)
+  - Info — amber (`#E8B93D`)
+  - Manual highlight — tints the **background** (≈28% of the swatch into
+    the grey); text stays dark, the frame keeps the type
 - **Structure/chrome accent:** slate blue (`#5C7A99`) for bay headers and
   dividers
 - **Typography:**

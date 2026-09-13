@@ -52,7 +52,8 @@ Defaults I'll use unless told otherwise:
 
 ---
 
-> **Status (2026-09-13):** Phases 0–10 built; 0–9 deployed.
+> **Status (2026-09-13):** Phases 0–10 built and deployed. Phase 11 (strip
+> look + collapsible strips) planned below.
 
 ## Phase 0 — Scaffold ✅
 
@@ -648,6 +649,79 @@ Calls I'll make:
 5. Verify in Chromium: migration of an existing vehicles list, add an
    info preset with a note, one tap creates it with the note, edit the
    note on the strip, export/import round trip.
+
+---
+
+## Phase 11 — Strip look and collapsible strips
+
+Decided with the user: every strip has a **light grey background**; the
+**type colour moves to the border** (vehicle red, arrival yellow,
+departure blue, other black, info amber); the **highlight swatch sets the
+background** as a **light tint** so text stays dark; the stale warning
+becomes **age text only** (no ring). Border: **3px all round plus the 8px
+left edge**, same colour.
+
+Calls I'll make:
+
+- One text palette for all strips (ink on grey), so the per-variant
+  `--strip-fg` / `--strip-fg-muted` / `--strip-divider` tokens collapse to
+  a single set. Variants now set only `--strip-border`.
+- Grey: `#E4E4E1` (neutral, warm-free) with dividers at ink 18%. Contrast
+  ink-on-grey ≈ 11:1; the amber and red age colours are re-checked on it.
+- Highlight tint: `color-mix(in srgb, <swatch> 28%, var(--strip-bg))` —
+  roughly "coloured paper". The swatch list stays the same six.
+- The archive's colour chip and the flight-kind segmented control follow
+  the same language (grey fill, coloured border, selected = filled).
+- The type buttons and quick-add chips keep their coloured icons/borders.
+- Print: coloured borders survive with `print-color-adjust: exact`.
+- No data change. `colorOverride` keeps its meaning; only the rendering
+  changes from "left stripe" to "background tint".
+
+### Part B — collapsible strips
+
+Decided with the user: strips are **collapsed by default** and hide
+notes (info/vehicle) and remarks (flight); **tapping the icon cell**
+expands/collapses; a **chevron in the icon cell** (▸ hidden text, ▾
+expanded) shows when there is hidden text, nothing when there isn't;
+**all collapsed strips have the same height — two rows** — so info and
+vehicle strips become as tall as flight strips, the message may use both
+lines, and longer text is cut with an ellipsis until expanded; expanded
+state is **remembered per strip** (saved with the board) and **any number**
+may be open.
+
+Calls I'll make:
+
+- `Strip.expanded?: boolean` (absent = collapsed). `toggleExpanded`
+  action; `sanitizeBoard` keeps it; archive snapshots keep it (harmless).
+- The icon cell becomes a 44px-wide button; its tap stops propagation so
+  it never opens the editor. Everything else on the strip behaves as now
+  (tap = editor, level cell = picker, long-press = drag).
+- Collapsed height = two rows (`2 × --strip-row-height` inside the
+  border), for every type. Info/vehicle main text is vertically centred
+  and clamped to two lines; the Zulu time cell stays.
+- Expanded: info/vehicle show the full message plus notes; flights show
+  remarks. Empty notes/remarks → no chevron, tapping the icon does
+  nothing visible (state still toggles; harmless).
+- `useSpanAlignment` already re-measures on board changes, so a spanning
+  strip that expands keeps its placeholder in step.
+
+### Build
+
+1. `index.css` tokens: `--strip-bg`, `--strip-ink`, per-type border
+   colours (reuse the existing colour values as `--strip-*-border`).
+2. `app.css` strip block: rewrite variants; highlight rule
+   `.strip[style*='--strip-accent']` → background tint; drop the stale
+   ring; icon cell uses the border colour for the glyph so the type reads
+   at a glance even with a highlight.
+3. Archive chip + segmented control + level picker "selected" states.
+4. `store.js`: `toggleExpanded`; tests. `Strip.jsx`: icon-cell button
+   with chevron; collapsed/expanded rendering per type; uniform height.
+5. Verify in Chromium at 1194 × 834: all five variants side by side,
+   collapsed heights identical, each highlight colour on each variant,
+   contrast audit (text ≥ 4.5:1 on grey and on every tint), expand/collapse
+   with and without hidden text, editor still opens from the body, level
+   picker still works, state survives reload, spanning strip expands
+   cleanly, print rules.
 
 ---
 

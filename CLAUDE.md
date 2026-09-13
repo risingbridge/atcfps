@@ -50,9 +50,10 @@ new build shows on the *second* open after a deploy.
   `confirm`/`prompt`) → `ToastProvider` (toasts with an Undo action;
   rendered as a popover so they sit above open `<dialog>`s).
 - Styling: plain CSS. Tokens in `src/index.css`, components in
-  `src/app.css`. Strip colours are per-variant tokens (`--strip-bg`,
-  `--strip-fg`, `--strip-fg-muted`, `--strip-divider`) set by
-  `[data-type]`/`[data-kind]` — read the tokens, don't hard-code colours.
+  `src/app.css`. Strips are grey with ink text; the type colour is the
+  frame, set as `--strip-frame` by `[data-type]`/`[data-kind]`; a
+  highlight tints the background via `--strip-accent`. Read the tokens
+  (`--strip-bg`, `--strip-ink`, `--strip-<type>`), don't hard-code colours.
 
 ## Invariants worth knowing
 

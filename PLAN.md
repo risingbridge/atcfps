@@ -52,7 +52,7 @@ Defaults I'll use unless told otherwise:
 
 ---
 
-> **Status (2026-09-13):** Phases 0–11 built and deployed.
+> **Status (2026-09-13):** Phases 0–12 built; 0–11 deployed.
 
 ## Phase 0 — Scaffold ✅
 
@@ -722,6 +722,52 @@ Calls I'll make:
    with and without hidden text, editor still opens from the body, level
    picker still works, state survives reload, spanning strip expands
    cleanly, print rules.
+
+---
+
+## Phase 12 — Dividers in a bay ✅
+
+Decided with the user: a **divider** is a line within a bay that strips
+can be moved above or below (e.g. a "CLEARED TO LAND" line in the runway
+bay); it is **dragged like a strip**; it carries an **optional label**;
+it is added from the **bay menu**, with **preset labels from Settings**
+offered as one-tap choices plus free text.
+
+Calls I'll make:
+
+- A divider is a fourth entry in the strip-type registry
+  (`type: 'divider'`, field `label`) and lives in `stripOrder` like any
+  strip. That gives drag-and-drop, reorder, cross-bay moves, undo,
+  export/import and cross-tab sync for free.
+- Where it must differ, the registry says so (`isDivider`): no archive
+  entry on removal (it's furniture, not a record), not counted in the
+  bay header, no age, no expand, no highlight, cannot span two bays,
+  never offered by the strip type buttons.
+- Rendering: a short (28 px) slate bar across the bay with the label
+  centred in small caps mono; long-press to drag; tap → a small dialog
+  to edit the label or remove.
+- Adding: bay ⋯ menu → "Add divider…" opens a chooser: preset labels as
+  chips (Settings → *Dividers*, same `PresetList` with the note field
+  hidden) plus a text field; blank = plain line. New dividers go to the
+  **bottom** of the bay and are dragged into place.
+- `settings.presets.divider: Preset[]` (label only; notes ignored).
+
+### Build
+
+1. `stripTypes.js`: `divider` entry (+ `isDivider` helper);
+   `stripLabel` returns the label or "Divider".
+2. `store.js`: `createDivider(boardId, bayId, label)`; `deleteStrip`
+   skips archiving dividers; `spanStrip`/`spanWith` ignore them;
+   `sanitizeStrip` accepts a blank label for dividers; presets gain
+   `divider`. Tests.
+3. UI: `Strip.jsx` renders the divider variant; `StripEditor` opens a
+   `DividerModal`; `BayMenu` gets "Add divider…" → `AddDividerDialog`;
+   `SettingsDialog` gets a *Dividers* section; bay count excludes
+   dividers; `useDeleteWithUndo` skips the archive toast wording.
+4. Verify in Chromium: add from menu (preset and free text), drag strips
+   across it, drag the divider, move it to another bay, edit label,
+   remove (no archive entry), export/import, uniform strip heights
+   unaffected.
 
 ---
 

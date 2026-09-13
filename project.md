@@ -32,7 +32,7 @@ AppState
   - boardOrder: [boardId, ...]
   - activeBoardId: string
   - settings: { keepScreenOn: boolean,
-                presets: { vehicle: Preset[], info: Preset[] } }  // Phase 9–10
+                presets: { vehicle: Preset[], info: Preset[], divider: Preset[] } }  // Phase 9–12
 
 Preset
   - label   // vehicle ID / info message
@@ -88,6 +88,11 @@ InfoStrip extends Strip
 VehicleStrip extends Strip
   - vehicleId               // quick-add text, e.g. "Follow-me 2"
   - notes                   // starts empty, editable later
+
+Divider extends Strip (Phase 12)     // a line strips are moved above/below
+  - label                   // optional, e.g. "CLEARED TO LAND"
+  // furniture, not a record: never archived, not counted, no age/expand/
+  // highlight, cannot span; lives in stripOrder so it drags like a strip
 ```
 
 Key design decision: bays store an ordered array of strip IDs

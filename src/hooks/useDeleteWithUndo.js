@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import { useToast } from './useToast.js'
 import { useDialogs } from './useDialogs.js'
-import { stripLabel } from '../lib/stripTypes.js'
+import { isDivider, stripLabel } from '../lib/stripTypes.js'
 import { actions } from '../state/store.js'
 import { useActiveBoard } from '../state/storeContext.js'
 
@@ -17,7 +17,7 @@ export function useDeleteWithUndo() {
       if (!strip) return
       const index = board.bays[strip.currentBayId]?.stripOrder.indexOf(stripId) ?? 0
       dispatch(actions.deleteStrip(board.id, stripId))
-      showToast(`Removed "${stripLabel(strip)}" to archive`, {
+      showToast(isDivider(strip) ? 'Removed divider' : `Removed "${stripLabel(strip)}" to archive`, {
         actionLabel: 'Undo',
         onAction: () => dispatch(actions.restoreStrip(board.id, strip, index)),
       })
@@ -29,7 +29,7 @@ export function useDeleteWithUndo() {
     async (bayId) => {
       const bay = board.bays[bayId]
       if (!bay) return false
-      const n = bay.stripOrder.length
+      const n = bay.stripOrder.filter((id) => !isDivider(board.strips[id])).length
       if (n && !(await confirm(`Delete bay "${bay.name}"? Its ${n} strip${n === 1 ? '' : 's'} will be archived.`))) return false
       const index = board.bayOrder.indexOf(bayId)
       const strips = Object.fromEntries(bay.stripOrder.map((id) => [id, board.strips[id]]))

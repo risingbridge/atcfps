@@ -542,17 +542,18 @@ describe('presets', () => {
   })
 
   it('sanitizePresets migrates a legacy vehicles list when no vehicle presets exist', () => {
-    expect(sanitizePresets(undefined, ['A', 'B'])).toEqual({ vehicle: [{ label: 'A', notes: '' }, { label: 'B', notes: '' }], info: [] })
-    expect(sanitizePresets({ vehicle: [{ label: 'X' }] }, ['A'])).toEqual({ vehicle: [{ label: 'X', notes: '' }], info: [] })
+    expect(sanitizePresets(undefined, ['A', 'B'])).toEqual({ vehicle: [{ label: 'A', notes: '' }, { label: 'B', notes: '' }], info: [], divider: [] })
+    expect(sanitizePresets({ vehicle: [{ label: 'X' }] }, ['A'])).toEqual({ vehicle: [{ label: 'X', notes: '' }], info: [], divider: [] })
     expect(sanitizePresets({ info: [{ label: 'Bird check', notes: 'N side' }] })).toEqual({
       vehicle: [],
       info: [{ label: 'Bird check', notes: 'N side' }],
+      divider: [],
     })
   })
 
   it('setPresets stores per type and is a no-op when unchanged', () => {
     const s0 = initialState({ boardId: 'b' })
-    expect(s0.settings.presets).toEqual({ vehicle: [], info: [] })
+    expect(s0.settings.presets).toEqual({ vehicle: [], info: [], divider: [] })
     const s1 = run(s0, A.setPresets('info', [{ label: 'Wind check', notes: 'every 30 min' }]))
     expect(s1.settings.presets.info).toEqual([{ label: 'Wind check', notes: 'every 30 min' }])
     expect(s1.settings.presets.vehicle).toEqual([])
@@ -586,5 +587,37 @@ describe('expanded', () => {
     const clean = sanitizeBoard(tampered, 'imp')
     expect(clean.strips.s1.expanded).toBe(true)
     expect('expanded' in clean.strips.s2).toBe(false)
+  })
+})
+
+describe('dividers', () => {
+  it('createDivider adds a divider at the end of the bay (blank label allowed)', () => {
+    const s = run(fixture(), A.createDivider('b', 'x', ' Cleared to land ', 'd1', T1), A.createDivider('b', 'x', '', 'd2', T1))
+    expect(s.boards.b.bays.x.stripOrder).toEqual(['s1', 's2', 's3', 'd1', 'd2'])
+    expect(s.boards.b.strips.d1).toMatchObject({ type: 'divider', label: 'Cleared to land', currentBayId: 'x' })
+    expect(s.boards.b.strips.d2.label).toBe('')
+    assertInvariants(s.boards.b)
+  })
+
+  it('dividers move like strips but are never archived', () => {
+    let s = run(fixture(), A.createDivider('b', 'x', 'L', 'd1', T1))
+    s = run(s, A.moveStrip('b', 'd1', 'x', 1))
+    expect(s.boards.b.bays.x.stripOrder).toEqual(['s1', 'd1', 's2', 's3'])
+    s = run(s, A.moveStrip('b', 'd1', 'y', 0))
+    expect(s.boards.b.bays.y.stripOrder).toEqual(['d1', 's4'])
+    s = run(s, A.deleteStrip('b', 'd1', T1))
+    expect(s.boards.b.strips.d1).toBeUndefined()
+    expect(s.boards.b.archive).toEqual([])
+    const cascade = run(run(fixture(), A.createDivider('b', 'x', 'L', 'd1', T1)), A.deleteBay('b', 'x', T1))
+    expect(cascade.boards.b.archive.map((e) => e.strip.id)).toEqual(['s1', 's2', 's3'])
+  })
+
+  it('dividers cannot span, expand, and keep only their label on sanitize', () => {
+    let s = run(fixture(), A.createDivider('b', 'x', 'L', 'd1', T1))
+    expect(run(s, A.spanWith('b', 'd1', 'y'))).toBe(s)
+    expect(run(s, A.spanStrip('b', 'd1', 'x', 0, T1)).boards.b.strips.d1.spanBayId).toBeUndefined()
+    expect(run(s, A.toggleExpanded('b', 'd1'))).toBe(s)
+    const clean = sanitizeBoard({ ...s.boards.b, strips: { ...s.boards.b.strips, d1: { ...s.boards.b.strips.d1, spanBayId: 'y', expanded: true, colorOverride: '#f00' } } }, 'imp')
+    expect(clean.strips.d1).toEqual({ id: 'd1', type: 'divider', currentBayId: 'x', createdAt: T1, lastMovedAt: T1, label: 'L' })
   })
 })

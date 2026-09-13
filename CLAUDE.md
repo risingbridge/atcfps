@@ -37,9 +37,11 @@ new build shows on the *second* open after a deploy.
   untrusted board data (imports, undo buffers) and is the single place the
   board invariants are enforced.
 - `src/lib/stripTypes.js` — registry of strip types (flight / info /
-  vehicle) and flight kinds (arrival / departure / other). Adding a type
-  means an entry here plus a render case in `Strip.jsx`; bay and
-  drag-and-drop code must not need to know.
+  vehicle / divider) and flight kinds (arrival / departure / other).
+  Adding a type means an entry here plus a render case in `Strip.jsx`;
+  bay and drag-and-drop code must not need to know. A divider is
+  furniture in `stripOrder` (`isDivider`): never archived, not counted,
+  no age/expand/highlight/span.
 - `src/lib/storage.js` — versioned `localStorage` load/save; unreadable
   data is moved to a backup key, never discarded. Missing fields default
   rather than bumping the schema version.

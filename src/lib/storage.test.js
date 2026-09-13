@@ -43,7 +43,7 @@ describe('storage', () => {
     const store = memoryStorage()
     const s = initialState({ boardId: 'b' })
     store.setItem(STORAGE_KEY, JSON.stringify({ version: 1, ...s, settings: { keepScreenOn: true } }))
-    expect(load(store).settings).toEqual({ keepScreenOn: true, presets: { vehicle: [], info: [] } })
+    expect(load(store).settings).toEqual({ keepScreenOn: true, presets: { vehicle: [], info: [], divider: [] } })
     store.setItem(STORAGE_KEY, JSON.stringify({ version: 1, ...s, settings: { vehicles: [' X ', 'x', ''] } }))
     const loaded = load(store).settings
     expect(loaded.presets.vehicle).toEqual([{ label: 'X', notes: '' }])

@@ -14,6 +14,8 @@ See `docs/local-only-audit.md` for the full audit.
 ## Features
 
 - Multiple boards; user-defined bays (rename, colour, drag to reorder)
+- Dividers inside a bay (e.g. a CLEARED TO LAND line) that strips are moved
+  above or below; draggable, labelled, with preset labels from Settings
 - Flight strips (full form, marked arrival / departure / other), info and
   vehicle strips (quick-add, Enter); pre-made vehicles and info strips from
   Settings appear as one-tap buttons, with optional pre-filled notes

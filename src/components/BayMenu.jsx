@@ -1,17 +1,22 @@
+import { useCallback, useState } from 'react'
 import { HIGHLIGHT_COLORS } from '../lib/colors.js'
 import { actions, shiftInOrder } from '../state/store.js'
 import { useActiveBoard } from '../state/storeContext.js'
+import AddDividerDialog from './AddDividerDialog.jsx'
 import Menu from './Menu.jsx'
 
 /** ⋯ menu in a bay header: colour, move, delete. */
 export default function BayMenu({ bay, index, count, onDelete, onRename }) {
   const { board, dispatch } = useActiveBoard()
+  const [addingDivider, setAddingDivider] = useState(false)
+  const closeAddDivider = useCallback(() => setAddingDivider(false), [])
 
   const move = (delta) => dispatch(actions.reorderBays(board.id, shiftInOrder(board.bayOrder, bay.id, delta)))
   const setColor = (color) => dispatch(actions.setBayColor(board.id, bay.id, color))
 
   const items = [
     { label: 'Rename bay…', onSelect: onRename },
+    { label: 'Add divider…', onSelect: () => setAddingDivider(true) },
     'separator',
     {
       node: (
@@ -48,5 +53,10 @@ export default function BayMenu({ bay, index, count, onDelete, onRename }) {
     { label: 'Delete bay', onSelect: onDelete, danger: true },
   ]
 
-  return <Menu label={`Bay menu: ${bay.name}`} items={items} align="right" />
+  return (
+    <>
+      <Menu label={`Bay menu: ${bay.name}`} items={items} align="right" />
+      {addingDivider && <AddDividerDialog bayId={bay.id} onClose={closeAddDivider} />}
+    </>
+  )
 }

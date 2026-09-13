@@ -3,6 +3,7 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-
 import { CSS } from '@dnd-kit/utilities'
 import { Fragment, useCallback, useRef, useState } from 'react'
 import { useDeleteWithUndo } from '../hooks/useDeleteWithUndo.js'
+import { isDivider } from '../lib/stripTypes.js'
 import { useSpanLayout } from '../state/spanLayoutContext.js'
 import { actions } from '../state/store.js'
 import { useActiveBoard } from '../state/storeContext.js'
@@ -59,7 +60,7 @@ export default function BayColumn({ bay, index, count, now }) {
           value={bay.name}
           onCommit={(name) => dispatch(actions.renameBay(board.id, bay.id, name))}
         />
-        <span className="bay-count">{bay.stripOrder.length}</span>
+        <span className="bay-count">{bay.stripOrder.filter((id) => !isDivider(board.strips[id])).length}</span>
         <div className="bay-tools">
           <BayMenu
             bay={bay}

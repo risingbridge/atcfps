@@ -7,7 +7,7 @@ import PresetList from './PresetList.jsx'
 export default function SettingsDialog({ onClose }) {
   const { state, dispatch } = useStore()
   const ref = useRef(null)
-  const presets = state.settings.presets ?? { vehicle: [], info: [] }
+  const presets = state.settings.presets ?? { vehicle: [], info: [], divider: [] }
 
   useEffect(() => {
     const dlg = ref.current
@@ -51,6 +51,19 @@ export default function SettingsDialog({ onClose }) {
             presets={presets.info}
             onChange={(list) => dispatch(actions.setPresets('info', list))}
             labelName="Message"
+          />
+        </section>
+
+        <section className="settings-section">
+          <h3 className="settings-title">Dividers</h3>
+          <p className="settings-help">
+            Labels offered when adding a divider to a bay (bay menu → Add divider…), e.g. CLEARED TO LAND.
+          </p>
+          <PresetList
+            presets={presets.divider ?? []}
+            onChange={(list) => dispatch(actions.setPresets('divider', list))}
+            labelName="Divider label"
+            noNotes
           />
         </section>
       </div>

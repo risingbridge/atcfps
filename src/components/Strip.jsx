@@ -1,4 +1,4 @@
-import { FLIGHT_KIND_META, STRIP_TYPES, hiddenText, normalizeFlightKind } from '../lib/stripTypes.js'
+import { FLIGHT_KIND_META, STRIP_TYPES, hiddenText, isDivider, normalizeFlightKind } from '../lib/stripTypes.js'
 import { ageClass, formatMinutes, formatZulu, minutesSince } from '../lib/time.js'
 
 function AgeCell({ minutes }) {
@@ -64,6 +64,25 @@ function QuickBody({ strip, def, minutes, expanded }) {
 
 export default function Strip({ strip, now, onClick, onEditLevel, onToggle, innerRef, style, className = '', dragProps }) {
   const def = STRIP_TYPES[strip.type]
+  if (isDivider(strip)) {
+    return (
+      <div
+        ref={innerRef}
+        className={`divider ${className}`}
+        data-type="divider"
+        data-strip-id={strip.id}
+        style={style}
+        onClick={onClick}
+        role="separator"
+        aria-label={strip.label ? `Divider: ${strip.label}` : 'Divider'}
+        {...dragProps}
+      >
+        <span className="divider-line" />
+        {strip.label && <span className="divider-label">{strip.label}</span>}
+        <span className="divider-line" />
+      </div>
+    )
+  }
   const merged = strip.colorOverride ? { ...style, '--strip-accent': strip.colorOverride } : style
   const minutes = now != null ? minutesSince(strip.lastMovedAt, now) : null
   const kind = strip.type === 'flight' ? normalizeFlightKind(strip.flightKind) : undefined

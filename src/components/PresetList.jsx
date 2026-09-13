@@ -5,7 +5,7 @@ import { shiftInOrder } from '../state/store.js'
  * Editable, ordered list of presets ({ label, notes }) for one quick-strip
  * type. `onChange(list)` receives the whole list after any edit.
  */
-export default function PresetList({ presets, onChange, labelName, autoFocus }) {
+export default function PresetList({ presets, onChange, labelName, autoFocus, noNotes = false }) {
   const [draft, setDraft] = useState({ label: '', notes: '' })
   const [editing, setEditing] = useState(null) // label of the row being edited
   const [edit, setEdit] = useState({ label: '', notes: '' })
@@ -56,13 +56,15 @@ export default function PresetList({ presets, onChange, labelName, autoFocus }) 
                     aria-label={labelName}
                     autoFocus
                   />
-                  <input
-                    className="input"
-                    value={edit.notes}
-                    onChange={(e) => setEdit({ ...edit, notes: e.target.value })}
-                    placeholder="Note (optional)"
-                    aria-label="Note"
-                  />
+                  {!noNotes && (
+                    <input
+                      className="input"
+                      value={edit.notes}
+                      onChange={(e) => setEdit({ ...edit, notes: e.target.value })}
+                      placeholder="Note (optional)"
+                      aria-label="Note"
+                    />
+                  )}
                   <div className="settings-edit-actions">
                     <button type="button" className="btn btn-quiet" onClick={() => setEditing(null)}>
                       Cancel
@@ -122,14 +124,16 @@ export default function PresetList({ presets, onChange, labelName, autoFocus }) 
           autoComplete="off"
           autoFocus={autoFocus}
         />
-        <input
-          className="input"
-          value={draft.notes}
-          onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
-          placeholder="Note (optional)"
-          aria-label="Note"
-          autoComplete="off"
-        />
+        {!noNotes && (
+          <input
+            className="input"
+            value={draft.notes}
+            onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
+            placeholder="Note (optional)"
+            aria-label="Note"
+            autoComplete="off"
+          />
+        )}
         <button className="btn btn-primary" type="submit" disabled={!draft.label.trim() || draftTaken}>
           Add
         </button>

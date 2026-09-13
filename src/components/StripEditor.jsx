@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import { useDeleteWithUndo } from '../hooks/useDeleteWithUndo.js'
 import { actions, leftNeighbour, rightNeighbour } from '../state/store.js'
 import { useActiveBoard } from '../state/storeContext.js'
+import DividerModal from './DividerModal.jsx'
 import EditNotesModal from './EditNotesModal.jsx'
 import FlightStripModal from './FlightStripModal.jsx'
 
@@ -31,6 +32,9 @@ export default function StripEditor({ strip, onClose }) {
     onClose()
   }, [deleteStrip, strip.id, onClose])
 
+  if (strip.type === 'divider') {
+    return <DividerModal strip={strip} onSubmit={save} onClose={onClose} onDelete={remove} />
+  }
   if (strip.type === 'flight') {
     return <FlightStripModal initial={strip} onSubmit={save} onClose={onClose} onDelete={remove} span={span} />
   }

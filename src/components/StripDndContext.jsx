@@ -14,6 +14,7 @@ import {
 import { SortableContext, arrayMove, horizontalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { useRef, useState } from 'react'
 import { baySortId } from '../lib/dnd.js'
+import { isDivider } from '../lib/stripTypes.js'
 import { actions } from '../state/store.js'
 import { useActiveBoard } from '../state/storeContext.js'
 import Strip from './Strip.jsx'
@@ -96,7 +97,7 @@ export default function StripDndContext({ children, onDraggingChange }) {
       return
     }
     const strip = board.strips[active.id]
-    if (strip && over?.data.current?.type === 'gap') {
+    if (strip && over?.data.current?.type === 'gap' && !isDivider(strip)) {
       const { leftBayId } = over.data.current
       dispatch(actions.spanStrip(board.id, active.id, leftBayId, indexFromDom(leftBayId, active)))
       if (origin.current && origin.current.bayId !== leftBayId) {

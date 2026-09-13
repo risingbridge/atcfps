@@ -1,5 +1,5 @@
 import { makeId } from '../lib/id.js'
-import { FLIGHT_FIELDS, getStripType, normalizeFlightKind } from '../lib/stripTypes.js'
+import { FLIGHT_FIELDS, getStripType, isDivider, normalizeFlightKind } from '../lib/stripTypes.js'
 
 /**
  * @typedef {Object} Strip
@@ -40,7 +40,7 @@ import { FLIGHT_FIELDS, getStripType, normalizeFlightKind } from '../lib/stripTy
  * @property {string} notes   pre-filled notes (may be empty)
  */
 
-export const PRESET_TYPES = ['vehicle', 'info']
+export const PRESET_TYPES = ['vehicle', 'info', 'divider']
 
 const DEFAULT_BOARD_NAME = 'Board 1'
 /** Newest N removed strips kept per board. */
@@ -158,7 +158,7 @@ export function initialState({ boardId = makeId() } = {}) {
 }
 
 export function emptyPresets() {
-  return { vehicle: [], info: [] }
+  return { vehicle: [], info: [], divider: [] }
 }
 
 /**
@@ -237,6 +237,10 @@ export const actions = {
   spanWith: (boardId, stripId, otherBayId, at = now()) => ({ type: 'spanWith', boardId, stripId, otherBayId, at }),
 
   setKeepScreenOn: (value) => ({ type: 'setKeepScreenOn', value }),
+  /** A divider line at the end of `bayId`; label may be blank. */
+  createDivider: (boardId, bayId, label = '', id = makeId(), at = now()) => ({
+    type: 'createDivider', boardId, bayId, label, id, at,
+  }),
   /** Show/hide a strip's notes or remarks on the board. */
   toggleExpanded: (boardId, stripId) => ({ type: 'toggleExpanded', boardId, stripId }),
   /** Replace one preset list (sanitised). */
@@ -376,7 +380,7 @@ export function reducer(state, action) {
         const bay = b.bays[action.bayId]
         if (!bay) return b
         const strips = { ...b.strips }
-        const removed = bay.stripOrder.map((id) => b.strips[id]).filter(Boolean)
+        const removed = bay.stripOrder.map((id) => b.strips[id]).filter((st) => st && !isDivider(st))
         for (const id of bay.stripOrder) delete strips[id]
         return normalizeSpans({
           ...b,
@@ -434,10 +438,21 @@ export function reducer(state, action) {
         }),
       )
     }
+    case 'createDivider':
+      return updateBoard(state, action.boardId, (b) =>
+        insertStrip(b, {
+          id: action.id,
+          type: 'divider',
+          currentBayId: action.bayId,
+          createdAt: action.at,
+          lastMovedAt: action.at,
+          label: cleanName(action.label),
+        }),
+      )
     case 'toggleExpanded':
       return updateBoard(state, action.boardId, (b) => {
         const strip = b.strips[action.stripId]
-        if (!strip) return b
+        if (!strip || isDivider(strip)) return b
         const { expanded: _e, ...rest } = strip
         const next = strip.expanded ? rest : { ...rest, expanded: true }
         return { ...b, strips: { ...b.strips, [strip.id]: next } }
@@ -466,7 +481,7 @@ export function reducer(state, action) {
           ...b,
           bays,
           strips: withoutKey(b.strips, strip.id),
-          archive: archiveStrips(b, [strip], action.at ?? now()),
+          archive: isDivider(strip) ? b.archive : archiveStrips(b, [strip], action.at ?? now()),
         }
       })
     case 'moveStrip':
@@ -485,7 +500,7 @@ export function reducer(state, action) {
         const right = rightNeighbour(b, action.leftBayId)
         const { board, bayChanged } = placeStrip(b, action.stripId, action.leftBayId, action.index)
         const strip = board.strips[action.stripId]
-        if (!right) return board
+        if (!right || isDivider(strip)) return board
         if (board === b && strip.spanBayId === right) return b
         const next = { ...strip, spanBayId: right }
         if (bayChanged) next.lastMovedAt = action.at
@@ -494,7 +509,7 @@ export function reducer(state, action) {
     case 'spanWith':
       return updateBoard(state, action.boardId, (b) => {
         const strip = b.strips[action.stripId]
-        if (!strip) return b
+        if (!strip || isDivider(strip)) return b
         if (!action.otherBayId) {
           if (!strip.spanBayId) return b
           const { spanBayId: _s, ...rest } = strip
@@ -695,11 +710,12 @@ function sanitizeStrip(raw, id, bayId) {
     createdAt: typeof raw.createdAt === 'string' ? raw.createdAt : now(),
     lastMovedAt: typeof raw.lastMovedAt === 'string' ? raw.lastMovedAt : now(),
   }
+  for (const f of def.fields) strip[f] = typeof raw[f] === 'string' ? raw[f] : ''
+  if (def.divider) return { ...strip, label: strip.label.trim() } // furniture: nothing else applies
   if (typeof raw.colorOverride === 'string' && raw.colorOverride) strip.colorOverride = raw.colorOverride
   if (typeof raw.spanBayId === 'string' && raw.spanBayId) strip.spanBayId = raw.spanBayId
   if (raw.expanded === true) strip.expanded = true
   if (def.key === 'flight') strip.flightKind = normalizeFlightKind(raw.flightKind)
-  for (const f of def.fields) strip[f] = typeof raw[f] === 'string' ? raw[f] : ''
   if (def.quickAdd && !strip[def.quickField]) return null
   if (!def.quickAdd && !strip.callsign) return null
   return strip

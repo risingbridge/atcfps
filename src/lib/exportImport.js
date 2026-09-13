@@ -41,7 +41,7 @@ export function exportAll(state) {
     kind: 'boards',
     exportedAt: new Date().toISOString(),
     boards: state.boardOrder.map((id) => state.boards[id]),
-    settings: { presets: state.settings?.presets ?? { vehicle: [], info: [] } },
+    settings: { presets: state.settings?.presets ?? { vehicle: [], info: [], divider: [] } },
   })
 }
 
@@ -69,7 +69,7 @@ export function parseImport(text) {
   const boards = raw.map((b) => sanitizeBoard(b, 'tmp')).filter(Boolean)
   if (boards.length === 0) throw new Error('No usable boards in file')
   const presets =
-    data.kind === 'boards' ? sanitizePresets(data.settings?.presets, data.settings?.vehicles) : { vehicle: [], info: [] }
+    data.kind === 'boards' ? sanitizePresets(data.settings?.presets, data.settings?.vehicles) : { vehicle: [], info: [], divider: [] }
   return { boards, presets }
 }
 

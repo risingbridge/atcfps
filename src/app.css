@@ -502,6 +502,54 @@
   font-weight: 600;
 }
 
+/* ---------- dividers ---------- */
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 28px;
+  padding: 0 var(--s-2);
+  color: var(--chrome-text);
+  font-family: var(--font-data);
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.divider:active {
+  background: color-mix(in srgb, var(--chrome) 20%, transparent);
+}
+
+.divider-line {
+  flex: 1;
+  height: 3px;
+  background: var(--chrome-strong);
+  border-radius: 2px;
+}
+
+.divider-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--chrome-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 70%;
+}
+
+.divider.strip-placeholder {
+  opacity: 0.3;
+}
+
+.btn-chip[data-type='divider'] {
+  border-color: var(--chrome-strong);
+}
+
 /* ---------- strip creation ---------- */
 
 .new-strip {
@@ -1553,6 +1601,14 @@ textarea.input {
 
   .strip-span {
     width: auto;
+  }
+
+  .divider-line {
+    background: #000;
+  }
+
+  .divider-label {
+    color: #000;
   }
 
   .bay-gap,

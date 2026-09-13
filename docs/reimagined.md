@@ -59,27 +59,59 @@ Everything below follows from that.
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
-- **The flow** is the runway as a process line with segments. Arrivals
-  move left-to-right along the top edge, departures right-to-left along
-  the bottom edge. The **RUNWAY segment is shared** — anything in it,
-  from either direction or from the vehicle rail, is *on the runway*.
-- **Inbound** and **Outbound** lanes hold everything not yet on the flow,
-  sorted by what matters there: ETA for inbound, readiness for outbound.
+- **The flow** is the runway as a process with segments. The **RUNWAY
+  segment is shared** — anything in it, from any direction or from the
+  vehicle rail, is *on the runway*.
+- **The flow is a ring, not a line** (circuit traffic is a large share of
+  the work here). Around the runway: `airborne ▸ crosswind ▸ downwind ▸
+  base ▸ final ▸ short final ▸ [RUNWAY]` and back to `airborne`. A
+  touch-and-go simply goes round again and its **circuit count** ticks
+  up. Straight-in arrivals join the ring at *final*; departures leave it
+  at *airborne* to *departed*; a full stop leaves the runway to
+  *vacated*. Segments are configurable per runway (add, rename, reorder,
+  remove); the template above is only the starting set.
+- **Inbound** and **Outbound** lanes hold everything not yet on the ring:
+  inbound in sequence order (ETA optional, drives a time view when
+  present), outbound by readiness.
+- **Lanes are switchable by position.** Some days one iPad is tower +
+  ground, some days tower only: a *position profile* chooses which lanes
+  are shown (inbound / outbound-ground / vehicles) without touching the
+  data.
 - **Vehicles** live on a rail with *permission areas* (taxiways, runway).
   A vehicle whose permission includes the runway is counted as on it.
 - **Attention bar** replaces "look at the whole board every few seconds":
-  it lists what the board has computed needs the controller's eyes.
+  it lists what the board has computed needs the controller's eyes, and
+  shows whether sound is muted.
+- **Runways are a list.** One is built first; the model never assumes it
+  is the only one, so a second (parallel or crossing, sharing the
+  occupancy rule) is an addition, not a rewrite.
 
 Bays still exist underneath — a segment *is* a bay — but the user never
-configures columns. They pick a runway layout and the segments come
+configures columns. They pick a runway template and the segments come
 with it.
 
-### Tokens, not strips
+### Tokens (which turn out to be strips)
 
-A token is a compact tile: callsign large, type and squawk small, colour
-by kind (the frame language from Phase 11 carries over). It is sized for
-a thumb, not for handwriting. Tap expands it into a card with the level
-picker, remarks, timers and the event log for that flight.
+Everything the controller wants without tapping — callsign, type,
+cleared level, squawk, wake category, runway, stand — is roughly what a
+paper strip shows. So the token keeps the strip's *shape* (a wide,
+two-row tile in the Phase 11 frame language) and changes its *nature*:
+it carries a state and a log. Tap expands it into a card with the level
+picker, remarks, timers and the event history for that flight.
+
+Two kinds of flight, because they need different things:
+
+- **IFR** — the full field set as today, plus wake category, runway and
+  stand.
+- **VFR** — fewer fields (no route; squawk defaults to 7000), may live in
+  the circuit, shows its **circuit count**, and can be created in two
+  taps (callsign + type from recall).
+
+Every token bound for the runway shows its **sequence number** — the
+landing order across circuit and straight-in traffic together ("number
+2, follow the Cessna on downwind"). Dragging a token in the ring or the
+inbound lane re-sequences; numbers recompute as aircraft land or go
+around. The attention bar shows who is *next*.
 
 ### Gestures that are the record
 
@@ -97,6 +129,22 @@ The essential idea: the controller never "writes down" a clearance. They
 *give* it, on the token, and the log line, timestamp and state change are
 the same action. The paper-era "then annotate the strip" step disappears.
 
+### Entry: almost no typing
+
+The two things that cost the most today are typing to create strips and
+writing things down. The second disappears by design (gestures are the
+record). For the first:
+
+- **Recall** — start a callsign and the flight fills from history (type,
+  wake, usual runway/stand, VFR/IFR); regular traffic is two taps.
+- **A callsign keypad**, not the iOS keyboard: large uppercase
+  alphanumerics, no autocorrect, digits and letters on one layer. It
+  covers 95% of entry (callsigns, types, squawks, levels) and never
+  hides half the board.
+- Presets for vehicles, info and dividers carry over as they are.
+- Structured pickers everywhere a value has a small domain (levels,
+  wake, runway, stand list).
+
 ### Time as a first-class axis
 
 - Inbound lane sorts by **ETA**, entered once (or estimated from the
@@ -112,7 +160,10 @@ the same action. The paper-era "then annotate the strip" step disappears.
 Entirely local rules over the state, evaluated every second:
 
 - **Runway occupancy** — two tokens in the RUNWAY segment, or one on the
-  runway while another is in *short final*: red bar, both tokens pulse.
+  runway while another is in *short final*: red bar, both tokens pulse,
+  tone. Circuit traffic makes this the common case, not the rare one —
+  a touch-and-go on the runway while number 2 turns final is exactly
+  what the rule is for.
 - **Vehicle vs. traffic** — a vehicle with runway permission while an
   aircraft is on final.
 - **Stale** — a token unchanged for longer than its segment's norm.
@@ -140,8 +191,9 @@ for the rest.
 
 - A **park** area where any token can be dropped with no state at all —
   the paper board's freedom, kept for the cases the model didn't foresee.
-- **Go-around** is a first-class state reachable by swipe-left from
-  final or the runway.
+- **Go-around** is a first-class transition: from *final*, *short final*
+  or the *runway* back into the ring at *airborne* — the same path a
+  touch-and-go takes, logged as a go-around instead.
 - **Runway change** flips the flow; tokens keep their state.
 - Any segment can be **renamed or added** for a specific airport (a
   displaced-threshold segment, an intersection departure point) — the
@@ -204,4 +256,21 @@ audits, and the "verify on the real iPad" rule from this project.
   on by default, mutable in Settings, with the muted state visible on the
   board. Runway-conflict alerts only; the rest stay visual.
 
-All four questions are answered; R0 (the hands-on prototype) can start.
+Round two (2026-09-13):
+
+- **Positions vary by day** → position profiles switch lanes on and off.
+- **Circuit traffic is a large share** → the flow is a ring with a circuit
+  count; touch-and-go and go-around are transitions on it.
+- **Always visible: callsign, type, cleared level, squawk, wake, runway,
+  stand** → tokens keep the strip's two-row shape; they change in nature,
+  not in size.
+- **Process line, not a map** → no per-airfield drawing.
+- **Landing sequence numbered and auto-updated** across circuit and
+  straight-in traffic.
+- **VFR and IFR are distinct kinds.**
+- **One runway now, modelled as a list** so more can follow.
+- **Biggest costs today: typing to create strips, writing things down** →
+  the entry section (recall, callsign keypad) and gestures-as-record are
+  the highest-value parts of the concept, and should be in R2, not later.
+
+R0 (the hands-on prototype) can start.

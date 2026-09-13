@@ -70,6 +70,8 @@ new build shows on the *second* open after a deploy.
   footers are sticky. Bays must not scroll individually — a spanning
   strip has to overflow its bay.
 - Tabs on one origin sync through the `storage` event (`replaceState`).
+- App-level settings live in `state.settings` (`keepScreenOn`,
+  `vehicles`); `SettingsDialog` is reached from the ⋯ board menu.
 
 ## UI conventions (iPad-first)
 

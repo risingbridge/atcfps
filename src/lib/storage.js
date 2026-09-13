@@ -5,6 +5,8 @@
 // a backup key rather than discarded, and load() returns null so the caller
 // starts fresh.
 
+import { sanitizeVehicles } from '../state/store.js'
+
 export const STORAGE_KEY = 'atc-strip-board'
 export const BACKUP_KEY = 'atc-strip-board.backup'
 export const SCHEMA_VERSION = 1
@@ -58,6 +60,7 @@ export function load(storage) {
   const { version: _v, ...state } = data
   if (!state.boards[state.activeBoardId]) state.activeBoardId = state.boardOrder[0]
   state.settings = { keepScreenOn: false, ...(state.settings ?? {}) }
+  state.settings.vehicles = sanitizeVehicles(state.settings.vehicles)
   return state
 }
 

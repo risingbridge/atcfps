@@ -31,7 +31,7 @@ AppState
   - boards: { [boardId]: Board }
   - boardOrder: [boardId, ...]
   - activeBoardId: string
-  - settings: { keepScreenOn: boolean }
+  - settings: { keepScreenOn: boolean, vehicles: string[] }  // regular vehicles (Phase 9)
 
 Board
   - id

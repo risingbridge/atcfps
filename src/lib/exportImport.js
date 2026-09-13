@@ -1,4 +1,4 @@
-import { sanitizeBoard } from '../state/store.js'
+import { sanitizeBoard, sanitizeVehicles } from '../state/store.js'
 
 export const FORMAT = 'atcfps'
 export const FORMAT_VERSION = 1
@@ -41,13 +41,15 @@ export function exportAll(state) {
     kind: 'boards',
     exportedAt: new Date().toISOString(),
     boards: state.boardOrder.map((id) => state.boards[id]),
+    settings: { vehicles: state.settings?.vehicles ?? [] },
   })
 }
 
 /**
  * Parse an export file. Accepts a single-board file, an all-boards file, or
- * (leniently) a bare board object. Returns sanitized boards ready for
- * importBoard(); throws with a readable message otherwise.
+ * (leniently) a bare board object. Returns { boards, vehicles }: sanitized
+ * boards ready for importBoard() and any regular vehicles the file carried;
+ * throws with a readable message otherwise.
  */
 export function parseImport(text) {
   let data
@@ -65,7 +67,8 @@ export function parseImport(text) {
 
   const boards = raw.map((b) => sanitizeBoard(b, 'tmp')).filter(Boolean)
   if (boards.length === 0) throw new Error('No usable boards in file')
-  return boards
+  const vehicles = data.kind === 'boards' ? sanitizeVehicles(data.settings?.vehicles) : []
+  return { boards, vehicles }
 }
 
 /** Read a File as text (FileReader keeps it simple across Safari versions). */

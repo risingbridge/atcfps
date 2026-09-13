@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ARCHIVE_LIMIT, actions as A, initialState, reducer, sanitizeBoard, shiftInOrder } from './store.js'
+import { ARCHIVE_LIMIT, actions as A, initialState, reducer, sanitizeBoard, sanitizeVehicles, shiftInOrder } from './store.js'
 
 const T0 = '2026-09-12T10:00:00.000Z'
 const T1 = '2026-09-12T10:05:00.000Z'
@@ -529,5 +529,23 @@ describe('spanning two bays', () => {
     const clean = sanitizeBoard(tampered, 'imp')
     expect(clean.strips.s1.spanBayId).toBe('y')
     expect(clean.strips.s4.spanBayId).toBeUndefined()
+  })
+})
+
+describe('regular vehicles', () => {
+  it('sanitizeVehicles trims, drops empties and case-insensitive duplicates, keeps order', () => {
+    expect(sanitizeVehicles([' Follow-me 2 ', '', 'Sweeper 1', 'follow-me 2', 42, 'Fire 1'])).toEqual([
+      'Follow-me 2', 'Sweeper 1', 'Fire 1',
+    ])
+    expect(sanitizeVehicles('nope')).toEqual([])
+  })
+
+  it('setVehicles stores the sanitised list and is a no-op when unchanged', () => {
+    const s0 = initialState({ boardId: 'b' })
+    expect(s0.settings.vehicles).toEqual([])
+    const s1 = run(s0, A.setVehicles(['A', 'B', 'a']))
+    expect(s1.settings.vehicles).toEqual(['A', 'B'])
+    expect(run(s1, A.setVehicles(['A', 'B']))).toBe(s1)
+    expect(run(s1, A.setVehicles(['B', 'A'])).settings.vehicles).toEqual(['B', 'A'])
   })
 })

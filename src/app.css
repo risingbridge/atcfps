@@ -519,8 +519,29 @@
 .quick-add {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--s-2);
   padding: var(--s-2);
+}
+
+/* one-tap regulars above the free-text field */
+.quick-chips {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+.btn-chip {
+  font-family: var(--font-data);
+  font-weight: 600;
+  border-color: var(--strip-vehicle-bg);
+  color: var(--chrome-text);
+}
+
+.btn-chip:active:not(:disabled) {
+  background: var(--strip-vehicle-bg);
+  color: var(--strip-vehicle-fg);
 }
 
 .quick-add .input {
@@ -1319,6 +1340,77 @@ textarea.input {
   .archive-row .archive-bay {
     display: none;
   }
+}
+
+/* ---------- settings ---------- */
+
+.settings {
+  width: min(640px, 94vw);
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-bottom: var(--s-4);
+}
+
+.settings-section + .settings-section {
+  margin-top: var(--s-5);
+  padding-top: var(--s-5);
+  border-top: 1px solid color-mix(in srgb, var(--chrome) 40%, transparent);
+}
+
+.settings-title {
+  margin: 0 0 var(--s-1);
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.settings-help {
+  margin: 0 0 var(--s-3);
+  font-size: 13px;
+  color: var(--chrome-text-muted);
+}
+
+.settings-empty {
+  margin: 0 0 var(--s-3);
+  color: var(--chrome-text-muted);
+}
+
+.settings-list {
+  list-style: none;
+  margin: 0 0 var(--s-3);
+  padding: 0;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  min-height: 48px;
+  padding: 2px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--chrome) 25%, transparent);
+}
+
+.settings-row-name {
+  flex: 1;
+  font-family: var(--font-data);
+  font-weight: 600;
+  font-size: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-add {
+  display: flex;
+  gap: var(--s-2);
+}
+
+.settings-add .input {
+  flex: 1;
+  min-width: 0;
 }
 
 /* ---------- print ---------- */

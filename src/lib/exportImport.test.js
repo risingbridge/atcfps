@@ -7,15 +7,19 @@ const board = reducer(reducer(initialState({ boardId: 'b' }), A.addBay('b', 'X',
 describe('parseImport', () => {
   it('accepts a single-board export', () => {
     const out = parseImport(JSON.stringify({ format: 'atcfps', version: 1, kind: 'board', board }))
-    expect(out).toHaveLength(1)
-    expect(out[0].bays.x.stripOrder).toEqual(['s'])
+    expect(out.boards).toHaveLength(1)
+    expect(out.boards[0].bays.x.stripOrder).toEqual(['s'])
+    expect(out.vehicles).toEqual([])
   })
   it('accepts an all-boards export', () => {
-    const out = parseImport(JSON.stringify({ format: 'atcfps', version: 1, kind: 'boards', boards: [board, board] }))
-    expect(out).toHaveLength(2)
+    const out = parseImport(
+      JSON.stringify({ format: 'atcfps', version: 1, kind: 'boards', boards: [board, board], settings: { vehicles: ['Fire 1', ' fire 1'] } }),
+    )
+    expect(out.boards).toHaveLength(2)
+    expect(out.vehicles).toEqual(['Fire 1'])
   })
   it('accepts a bare board object', () => {
-    expect(parseImport(JSON.stringify(board))).toHaveLength(1)
+    expect(parseImport(JSON.stringify(board)).boards).toHaveLength(1)
   })
   it('rejects junk with readable errors', () => {
     expect(() => parseImport('nope')).toThrow('Not a JSON file')

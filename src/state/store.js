@@ -31,7 +31,8 @@ import { FLIGHT_FIELDS, getStripType, normalizeFlightKind } from '../lib/stripTy
  * @property {Record<string, Board>} boards
  * @property {string[]} boardOrder
  * @property {string} activeBoardId
- * @property {{ keepScreenOn: boolean }} settings
+ * @property {{ keepScreenOn: boolean, vehicles: string[] }} settings
+ *   `vehicles`: regular vehicle names offered as one-tap quick-add (user-ordered)
  */
 
 const DEFAULT_BOARD_NAME = 'Board 1'
@@ -145,8 +146,22 @@ export function initialState({ boardId = makeId() } = {}) {
     boards: { [boardId]: newBoard(boardId, DEFAULT_BOARD_NAME) },
     boardOrder: [boardId],
     activeBoardId: boardId,
-    settings: { keepScreenOn: false },
+    settings: { keepScreenOn: false, vehicles: [] },
   }
+}
+
+/** Trimmed, non-empty, de-duplicated (case-insensitively), order kept. */
+export function sanitizeVehicles(list) {
+  const out = []
+  const seen = new Set()
+  for (const raw of Array.isArray(list) ? list : []) {
+    const name = typeof raw === 'string' ? raw.trim() : ''
+    const key = name.toLowerCase()
+    if (!name || seen.has(key)) continue
+    seen.add(key)
+    out.push(name)
+  }
+  return out
 }
 
 // ---------------------------------------------------------------------------
@@ -199,6 +214,8 @@ export const actions = {
   spanWith: (boardId, stripId, otherBayId, at = now()) => ({ type: 'spanWith', boardId, stripId, otherBayId, at }),
 
   setKeepScreenOn: (value) => ({ type: 'setKeepScreenOn', value }),
+  /** Replace the regular-vehicles list (sanitised). */
+  setVehicles: (names) => ({ type: 'setVehicles', names }),
 
   /** Add a board (e.g. from an import) under a fresh id and make it active. */
   importBoard: (board, id = makeId()) => ({ type: 'importBoard', board, id }),
@@ -532,6 +549,12 @@ export function reducer(state, action) {
     case 'setKeepScreenOn':
       if (state.settings.keepScreenOn === !!action.value) return state
       return { ...state, settings: { ...state.settings, keepScreenOn: !!action.value } }
+    case 'setVehicles': {
+      const vehicles = sanitizeVehicles(action.names)
+      const cur = state.settings.vehicles ?? []
+      if (cur.length === vehicles.length && cur.every((v, i) => v === vehicles[i])) return state
+      return { ...state, settings: { ...state.settings, vehicles } }
+    }
 
     default:
       return state

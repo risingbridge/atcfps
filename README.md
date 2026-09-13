@@ -13,7 +13,8 @@ build ships a Content-Security-Policy that blocks any outbound request.
 
 - Multiple boards; user-defined bays (rename, colour, drag to reorder)
 - Flight strips (full form, marked arrival / departure / other), info and
-  vehicle strips (quick-add, Enter)
+  vehicle strips (quick-add, Enter); regular vehicles from Settings appear
+  as one-tap buttons
 - Coloured strips like real strip paper: arrivals yellow, departures blue,
   other traffic black, vehicles red, info amber
 - iPad-first: three bays across in landscape, 44 px+ touch targets

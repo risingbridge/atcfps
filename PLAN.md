@@ -52,7 +52,7 @@ Defaults I'll use unless told otherwise:
 
 ---
 
-> **Status (2026-09-13):** Phases 0–8 built and deployed.
+> **Status (2026-09-13):** Phases 0–9 built; 0–8 deployed.
 
 ## Phase 0 — Scaffold ✅
 
@@ -566,6 +566,43 @@ Needs a look on the real iPad.
   back; set/clear from the editor; scroll the board with many strips —
   headers and footers stay put.
 - iPad: the new scroll model, gap drop by touch.
+
+---
+
+## Phase 9 — Regular vehicles ✅
+
+Decided with the user: a list of regular vehicles kept in **app settings
+(shared by all boards)**; tapping "Vehicle" in a bay shows them as a
+quick menu and **one tap creates the strip**; each entry is a **name
+only**; the list is **ordered by hand** in settings. The free-text field
+stays for anything not on the list.
+
+Calls I'll make:
+
+- There is no settings UI yet, so this adds one: **Settings…** in the ⋯
+  board menu opens a `<dialog>`; "Regular vehicles" is its first
+  section. Keep-screen-on stays in the bar.
+- `settings.vehicles: string[]` — trimmed, non-empty, de-duplicated
+  (case-insensitive), in the user's order. Missing → `[]`, no schema bump.
+- **Export all boards** now includes `settings.vehicles`; importing such a
+  file merges them (existing order first, then new names). A single-board
+  export is unchanged.
+- Tapping a regular creates the strip and keeps the quick-add open, the
+  same as Enter does today, so several can be added in a row.
+
+### Build
+
+1. `store.js`: `setVehicles(names)` with sanitising; `storage.load`
+   defaults `settings.vehicles`; tests.
+2. `exportImport.js`: `settings` in the all-boards file; `parseImport`
+   returns `{ boards, vehicles }`; BoardMenu merges on import.
+3. `SettingsDialog.jsx` (from the ⋯ menu): list rows ≥ 48 px with
+   ▲ ▼ ✕, an add field (Enter adds), empty state text.
+4. `NewStripMenu.jsx`: in vehicle mode, a wrapping row of 44 px chips
+   above the input; chip tap → `createQuickStrip`.
+5. Verify in Chromium at 1194 × 834: add/reorder/remove in settings,
+   chips appear in every bay and on every board, one tap creates, text
+   field still works, export-all → import merges.
 
 ---
 

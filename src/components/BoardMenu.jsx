@@ -6,6 +6,7 @@ import { actions } from '../state/store.js'
 import { useStore } from '../state/storeContext.js'
 import ArchiveView from './ArchiveView.jsx'
 import Menu from './Menu.jsx'
+import SettingsDialog from './SettingsDialog.jsx'
 
 export default function BoardMenu() {
   const { state, dispatch } = useStore()
@@ -15,6 +16,8 @@ export default function BoardMenu() {
   const board = state.boards[state.activeBoardId]
   const [archiveOpen, setArchiveOpen] = useState(false)
   const closeArchive = useCallback(() => setArchiveOpen(false), [])
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const closeSettings = useCallback(() => setSettingsOpen(false), [])
   const archiveCount = board.archive?.length ?? 0
 
   async function newBoard() {
@@ -50,8 +53,9 @@ export default function BoardMenu() {
     e.target.value = ''
     if (!file) return
     try {
-      const boards = parseImport(await readFileText(file))
+      const { boards, vehicles } = parseImport(await readFileText(file))
       for (const b of boards) dispatch(actions.importBoard(b))
+      if (vehicles.length) dispatch(actions.setVehicles([...(state.settings.vehicles ?? []), ...vehicles]))
       showToast(boards.length === 1 ? `Imported "${boards[0].name || 'board'}"` : `Imported ${boards.length} boards`)
     } catch (err) {
       showToast(`Import failed: ${err.message}`, { tone: 'error' })
@@ -71,6 +75,7 @@ export default function BoardMenu() {
     { label: 'Import…', onSelect: () => fileInput.current?.click() },
     'separator',
     { label: 'Print', onSelect: () => window.print() },
+    { label: 'Settings…', onSelect: () => setSettingsOpen(true) },
     'separator',
     { label: 'Delete board', onSelect: remove, danger: true },
   ]
@@ -79,6 +84,7 @@ export default function BoardMenu() {
     <>
       <Menu label="Board menu" items={items} />
       {archiveOpen && <ArchiveView onClose={closeArchive} />}
+      {settingsOpen && <SettingsDialog onClose={closeSettings} />}
       <input
         ref={fileInput}
         type="file"

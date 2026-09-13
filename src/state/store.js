@@ -31,9 +31,15 @@ import { FLIGHT_FIELDS, getStripType, normalizeFlightKind } from '../lib/stripTy
  * @property {Record<string, Board>} boards
  * @property {string[]} boardOrder
  * @property {string} activeBoardId
- * @property {{ keepScreenOn: boolean, vehicles: string[] }} settings
- *   `vehicles`: regular vehicle names offered as one-tap quick-add (user-ordered)
+ * @property {{ keepScreenOn: boolean, presets: { vehicle: Preset[], info: Preset[] } }} settings
+ *   presets: pre-made quick strips offered as one-tap buttons, user-ordered
+ *
+ * @typedef {Object} Preset
+ * @property {string} label   vehicle ID / info message
+ * @property {string} notes   pre-filled notes (may be empty)
  */
+
+export const PRESET_TYPES = ['vehicle', 'info']
 
 const DEFAULT_BOARD_NAME = 'Board 1'
 /** Newest N removed strips kept per board. */
@@ -146,21 +152,37 @@ export function initialState({ boardId = makeId() } = {}) {
     boards: { [boardId]: newBoard(boardId, DEFAULT_BOARD_NAME) },
     boardOrder: [boardId],
     activeBoardId: boardId,
-    settings: { keepScreenOn: false, vehicles: [] },
+    settings: { keepScreenOn: false, presets: emptyPresets() },
   }
 }
 
-/** Trimmed, non-empty, de-duplicated (case-insensitively), order kept. */
-export function sanitizeVehicles(list) {
+export function emptyPresets() {
+  return { vehicle: [], info: [] }
+}
+
+/**
+ * One preset list: labels trimmed and non-empty, de-duplicated by label
+ * (case-insensitively), notes trimmed, order kept. Accepts plain strings
+ * (the Phase 9 `settings.vehicles` shape) as label-only presets.
+ */
+export function sanitizePresetList(list) {
   const out = []
   const seen = new Set()
   for (const raw of Array.isArray(list) ? list : []) {
-    const name = typeof raw === 'string' ? raw.trim() : ''
-    const key = name.toLowerCase()
-    if (!name || seen.has(key)) continue
+    const label = (typeof raw === 'string' ? raw : typeof raw?.label === 'string' ? raw.label : '').trim()
+    const key = label.toLowerCase()
+    if (!label || seen.has(key)) continue
     seen.add(key)
-    out.push(name)
+    out.push({ label, notes: typeof raw?.notes === 'string' ? raw.notes.trim() : '' })
   }
+  return out
+}
+
+/** All preset lists, from `presets` (new) and/or `vehicles` (Phase 9 migration). */
+export function sanitizePresets(presets, legacyVehicles) {
+  const out = emptyPresets()
+  for (const t of PRESET_TYPES) out[t] = sanitizePresetList(presets?.[t])
+  if (out.vehicle.length === 0 && Array.isArray(legacyVehicles)) out.vehicle = sanitizePresetList(legacyVehicles)
   return out
 }
 
@@ -214,8 +236,12 @@ export const actions = {
   spanWith: (boardId, stripId, otherBayId, at = now()) => ({ type: 'spanWith', boardId, stripId, otherBayId, at }),
 
   setKeepScreenOn: (value) => ({ type: 'setKeepScreenOn', value }),
-  /** Replace the regular-vehicles list (sanitised). */
-  setVehicles: (names) => ({ type: 'setVehicles', names }),
+  /** Replace one preset list (sanitised). */
+  setPresets: (presetType, list) => ({ type: 'setPresets', presetType, list }),
+  /** Create a quick strip from a preset (label + pre-filled notes). */
+  createPresetStrip: (boardId, bayId, stripType, preset, id = makeId(), at = now()) => ({
+    type: 'createPresetStrip', boardId, bayId, stripType, preset, id, at,
+  }),
 
   /** Add a board (e.g. from an import) under a fresh id and make it active. */
   importBoard: (board, id = makeId()) => ({ type: 'importBoard', board, id }),
@@ -388,6 +414,23 @@ export function reducer(state, action) {
         }),
       )
     }
+    case 'createPresetStrip': {
+      const def = getStripType(action.stripType)
+      if (!def.quickAdd) return state
+      const [preset] = sanitizePresetList([action.preset])
+      if (!preset) return state
+      return updateBoard(state, action.boardId, (b) =>
+        insertStrip(b, {
+          id: action.id,
+          type: def.key,
+          currentBayId: action.bayId,
+          createdAt: action.at,
+          lastMovedAt: action.at,
+          [def.quickField]: preset.label,
+          notes: preset.notes,
+        }),
+      )
+    }
     case 'updateStrip':
       return updateBoard(state, action.boardId, (b) => {
         const strip = b.strips[action.stripId]
@@ -549,11 +592,15 @@ export function reducer(state, action) {
     case 'setKeepScreenOn':
       if (state.settings.keepScreenOn === !!action.value) return state
       return { ...state, settings: { ...state.settings, keepScreenOn: !!action.value } }
-    case 'setVehicles': {
-      const vehicles = sanitizeVehicles(action.names)
-      const cur = state.settings.vehicles ?? []
-      if (cur.length === vehicles.length && cur.every((v, i) => v === vehicles[i])) return state
-      return { ...state, settings: { ...state.settings, vehicles } }
+    case 'setPresets': {
+      if (!PRESET_TYPES.includes(action.presetType)) return state
+      const list = sanitizePresetList(action.list)
+      const cur = state.settings.presets?.[action.presetType] ?? []
+      if (cur.length === list.length && cur.every((p, i) => p.label === list[i].label && p.notes === list[i].notes)) return state
+      return {
+        ...state,
+        settings: { ...state.settings, presets: { ...emptyPresets(), ...state.settings.presets, [action.presetType]: list } },
+      }
     }
 
     default:

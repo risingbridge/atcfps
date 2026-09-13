@@ -15,8 +15,8 @@ See `docs/local-only-audit.md` for the full audit.
 
 - Multiple boards; user-defined bays (rename, colour, drag to reorder)
 - Flight strips (full form, marked arrival / departure / other), info and
-  vehicle strips (quick-add, Enter); regular vehicles from Settings appear
-  as one-tap buttons
+  vehicle strips (quick-add, Enter); pre-made vehicles and info strips from
+  Settings appear as one-tap buttons, with optional pre-filled notes
 - Coloured strips like real strip paper: arrivals yellow, departures blue,
   other traffic black, vehicles red, info amber
 - iPad-first: three bays across in landscape, 44 px+ touch targets

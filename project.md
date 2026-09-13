@@ -31,7 +31,12 @@ AppState
   - boards: { [boardId]: Board }
   - boardOrder: [boardId, ...]
   - activeBoardId: string
-  - settings: { keepScreenOn: boolean, vehicles: string[] }  // regular vehicles (Phase 9)
+  - settings: { keepScreenOn: boolean,
+                presets: { vehicle: Preset[], info: Preset[] } }  // Phase 9–10
+
+Preset
+  - label   // vehicle ID / info message
+  - notes   // pre-filled on the strip, editable there
 
 Board
   - id

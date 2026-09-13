@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ARCHIVE_LIMIT, actions as A, initialState, reducer, sanitizeBoard, sanitizeVehicles, shiftInOrder } from './store.js'
+import { ARCHIVE_LIMIT, actions as A, initialState, reducer, sanitizeBoard, sanitizePresetList, sanitizePresets, shiftInOrder } from './store.js'
 
 const T0 = '2026-09-12T10:00:00.000Z'
 const T1 = '2026-09-12T10:05:00.000Z'
@@ -532,20 +532,41 @@ describe('spanning two bays', () => {
   })
 })
 
-describe('regular vehicles', () => {
-  it('sanitizeVehicles trims, drops empties and case-insensitive duplicates, keeps order', () => {
-    expect(sanitizeVehicles([' Follow-me 2 ', '', 'Sweeper 1', 'follow-me 2', 42, 'Fire 1'])).toEqual([
-      'Follow-me 2', 'Sweeper 1', 'Fire 1',
+describe('presets', () => {
+  it('sanitizePresetList accepts strings and objects, trims, de-duplicates by label', () => {
+    expect(sanitizePresetList([' Follow-me 2 ', { label: 'Sweeper 1', notes: ' ch 3 ' }, 'follow-me 2', { label: '' }, 42])).toEqual([
+      { label: 'Follow-me 2', notes: '' },
+      { label: 'Sweeper 1', notes: 'ch 3' },
     ])
-    expect(sanitizeVehicles('nope')).toEqual([])
+    expect(sanitizePresetList('nope')).toEqual([])
   })
 
-  it('setVehicles stores the sanitised list and is a no-op when unchanged', () => {
+  it('sanitizePresets migrates a legacy vehicles list when no vehicle presets exist', () => {
+    expect(sanitizePresets(undefined, ['A', 'B'])).toEqual({ vehicle: [{ label: 'A', notes: '' }, { label: 'B', notes: '' }], info: [] })
+    expect(sanitizePresets({ vehicle: [{ label: 'X' }] }, ['A'])).toEqual({ vehicle: [{ label: 'X', notes: '' }], info: [] })
+    expect(sanitizePresets({ info: [{ label: 'Bird check', notes: 'N side' }] })).toEqual({
+      vehicle: [],
+      info: [{ label: 'Bird check', notes: 'N side' }],
+    })
+  })
+
+  it('setPresets stores per type and is a no-op when unchanged', () => {
     const s0 = initialState({ boardId: 'b' })
-    expect(s0.settings.vehicles).toEqual([])
-    const s1 = run(s0, A.setVehicles(['A', 'B', 'a']))
-    expect(s1.settings.vehicles).toEqual(['A', 'B'])
-    expect(run(s1, A.setVehicles(['A', 'B']))).toBe(s1)
-    expect(run(s1, A.setVehicles(['B', 'A'])).settings.vehicles).toEqual(['B', 'A'])
+    expect(s0.settings.presets).toEqual({ vehicle: [], info: [] })
+    const s1 = run(s0, A.setPresets('info', [{ label: 'Wind check', notes: 'every 30 min' }]))
+    expect(s1.settings.presets.info).toEqual([{ label: 'Wind check', notes: 'every 30 min' }])
+    expect(s1.settings.presets.vehicle).toEqual([])
+    expect(run(s1, A.setPresets('info', [{ label: 'Wind check', notes: 'every 30 min' }]))).toBe(s1)
+    expect(run(s1, A.setPresets('bogus', ['x']))).toBe(s1)
+  })
+
+  it('createPresetStrip makes a quick strip with the preset notes', () => {
+    const s = run(fixture(), A.createPresetStrip('b', 'x', 'info', { label: 'Wind check', notes: 'every 30 min' }, 'p', T1))
+    expect(s.boards.b.strips.p).toMatchObject({ type: 'info', message: 'Wind check', notes: 'every 30 min', currentBayId: 'x', createdAt: T1 })
+    expect(s.boards.b.bays.x.stripOrder.at(-1)).toBe('p')
+    const v = run(s, A.createPresetStrip('b', 'y', 'vehicle', { label: 'Fire 1' }, 'q', T1))
+    expect(v.boards.b.strips.q).toMatchObject({ type: 'vehicle', vehicleId: 'Fire 1', notes: '' })
+    expect(run(s, A.createPresetStrip('b', 'x', 'flight', { label: 'X' }, 'r'))).toBe(s)
+    expect(run(s, A.createPresetStrip('b', 'x', 'info', { label: '  ' }, 'r'))).toBe(s)
   })
 })

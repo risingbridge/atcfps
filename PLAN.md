@@ -52,7 +52,7 @@ Defaults I'll use unless told otherwise:
 
 ---
 
-> **Status (2026-09-13):** Phases 0–9 built; 0–8 deployed.
+> **Status (2026-09-13):** Phases 0–10 built; 0–9 deployed.
 
 ## Phase 0 — Scaffold ✅
 
@@ -603,6 +603,51 @@ Calls I'll make:
 5. Verify in Chromium at 1194 × 834: add/reorder/remove in settings,
    chips appear in every bay and on every board, one tap creates, text
    field still works, export-all → import merges.
+
+---
+
+## Phase 10 — Pre-made info strips (presets with notes) ✅
+
+Decided with the user: info strips get a pre-made list like vehicles;
+each preset can carry a **pre-made note**; tapping a preset **creates the
+strip immediately** with that note; the note on the placed strip stays
+editable as today (tap → edit). Vehicles get the same shape — an optional
+note — for symmetry.
+
+Calls I'll make:
+
+- One settings model for both: `settings.presets = { vehicle: Preset[],
+  info: Preset[] }`, `Preset = { label, notes }`. Label is the vehicle ID
+  / info message; notes optional. Sanitised like vehicles (trimmed,
+  non-empty label, de-duplicated by label case-insensitively, user
+  order). **`settings.vehicles` (Phase 9) is migrated** on load — each
+  name becomes `{ label, notes: '' }` — and dropped; no schema bump.
+- Export-all carries `settings.presets`; import merges per type (existing
+  order first). Old files with `settings.vehicles` still import.
+- New reducer action `createPresetStrip(boardId, bayId, type, preset)`
+  rather than widening `createQuickStrip`'s positional signature; same
+  strip shape, `notes` pre-filled.
+- Settings dialog: two sections, "Regular vehicles" and "Regular info
+  strips". A row shows label and (if any) note; ✎ expands it into an
+  inline label + note editor with Save/Cancel; ▲ ▼ ✕ as now. The add
+  form gains a note field.
+- Quick menu: info mode shows chips like vehicle mode; chip text is the
+  label, a small "·" marker on chips that carry a note. Tap → strip with
+  note; the free-text field stays.
+
+### Build
+
+1. `store.js`: `presets` model + `sanitizePresets`, `setPresets(type,
+   list)`, `createPresetStrip`; `storage.load` migration; tests
+   (sanitise, migration, create-with-note, import merge).
+2. `exportImport.js`: presets in the all-boards export; `parseImport`
+   returns `{ boards, presets }` (accepting old `vehicles`).
+3. `SettingsDialog.jsx`: generic `PresetList` used for both types.
+4. `NewStripMenu.jsx`: chips for both quick types via
+   `settings.presets[mode]`.
+5. Verify in Chromium: migration of an existing vehicles list, add an
+   info preset with a note, one tap creates it with the note, edit the
+   note on the strip, export/import round trip.
 
 ---
 

@@ -9,7 +9,7 @@ export default function NewStripMenu({ bayId }) {
   const { board, dispatch } = useActiveBoard()
   const { state } = useStore()
   const [mode, setMode] = useState(null) // null | strip type key
-  const regulars = mode === 'vehicle' ? (state.settings.vehicles ?? []) : []
+  const presets = mode ? (state.settings.presets?.[mode] ?? []) : []
   const [value, setValue] = useState('')
   const inputRef = useRef(null)
 
@@ -30,17 +30,20 @@ export default function NewStripMenu({ bayId }) {
     const def = STRIP_TYPES[mode]
     return (
       <form className="quick-add" onSubmit={quickSubmit} data-type={mode}>
-        {regulars.length > 0 && (
-          <div className="quick-chips" role="group" aria-label="Regular vehicles">
-            {regulars.map((name) => (
+        {presets.length > 0 && (
+          <div className="quick-chips" role="group" aria-label={`Regular ${def.label.toLowerCase()} strips`}>
+            {presets.map((p) => (
               <button
-                key={name}
+                key={p.label}
                 type="button"
                 className="btn btn-chip"
+                data-type={mode}
+                title={p.notes || undefined}
                 onPointerDown={(e) => e.preventDefault()} /* keep the input focused so its blur doesn't close us */
-                onClick={() => dispatch(actions.createQuickStrip(board.id, bayId, mode, name))}
+                onClick={() => dispatch(actions.createPresetStrip(board.id, bayId, mode, p))}
               >
-                {name}
+                {p.label}
+                {p.notes && <span className="chip-note" aria-label="has a note">·</span>}
               </button>
             ))}
           </div>

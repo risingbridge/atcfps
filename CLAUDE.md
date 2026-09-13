@@ -74,7 +74,9 @@ new build shows on the *second* open after a deploy.
   strip has to overflow its bay.
 - Tabs on one origin sync through the `storage` event (`replaceState`).
 - App-level settings live in `state.settings` (`keepScreenOn`,
-  `vehicles`); `SettingsDialog` is reached from the ⋯ board menu.
+  `presets: { vehicle, info }` of `{ label, notes }`); `SettingsDialog`
+  is reached from the ⋯ board menu. `storage.load` migrates the older
+  `settings.vehicles` string list.
 
 ## UI conventions (iPad-first)
 

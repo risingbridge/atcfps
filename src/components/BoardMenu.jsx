@@ -53,9 +53,11 @@ export default function BoardMenu() {
     e.target.value = ''
     if (!file) return
     try {
-      const { boards, vehicles } = parseImport(await readFileText(file))
+      const { boards, presets } = parseImport(await readFileText(file))
       for (const b of boards) dispatch(actions.importBoard(b))
-      if (vehicles.length) dispatch(actions.setVehicles([...(state.settings.vehicles ?? []), ...vehicles]))
+      for (const t of Object.keys(presets)) {
+        if (presets[t].length) dispatch(actions.setPresets(t, [...(state.settings.presets?.[t] ?? []), ...presets[t]]))
+      }
       showToast(boards.length === 1 ? `Imported "${boards[0].name || 'board'}"` : `Imported ${boards.length} boards`)
     } catch (err) {
       showToast(`Import failed: ${err.message}`, { tone: 'error' })

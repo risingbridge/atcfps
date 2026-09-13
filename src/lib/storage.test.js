@@ -39,13 +39,15 @@ describe('storage', () => {
     expect(store.getItem(BACKUP_KEY)).toBe(raw)
   })
 
-  it('defaults settings.vehicles for older data and sanitises it', () => {
+  it('defaults settings.presets for older data and migrates Phase 9 vehicles', () => {
     const store = memoryStorage()
     const s = initialState({ boardId: 'b' })
     store.setItem(STORAGE_KEY, JSON.stringify({ version: 1, ...s, settings: { keepScreenOn: true } }))
-    expect(load(store).settings).toEqual({ keepScreenOn: true, vehicles: [] })
+    expect(load(store).settings).toEqual({ keepScreenOn: true, presets: { vehicle: [], info: [] } })
     store.setItem(STORAGE_KEY, JSON.stringify({ version: 1, ...s, settings: { vehicles: [' X ', 'x', ''] } }))
-    expect(load(store).settings.vehicles).toEqual(['X'])
+    const loaded = load(store).settings
+    expect(loaded.presets.vehicle).toEqual([{ label: 'X', notes: '' }])
+    expect('vehicles' in loaded).toBe(false)
   })
 
   it('repairs a dangling activeBoardId', () => {

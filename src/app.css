@@ -539,9 +539,25 @@
   color: var(--chrome-text);
 }
 
+.btn-chip[data-type='info'] {
+  border-color: var(--accent-info);
+}
+
 .btn-chip:active:not(:disabled) {
   background: var(--strip-vehicle-bg);
   color: var(--strip-vehicle-fg);
+}
+
+.btn-chip[data-type='info']:active:not(:disabled) {
+  background: var(--strip-info-bg);
+  color: var(--strip-info-fg);
+}
+
+.chip-note {
+  margin-left: 2px;
+  font-size: 22px;
+  line-height: 0;
+  color: var(--chrome-text-muted);
 }
 
 .quick-add .input {
@@ -1393,8 +1409,15 @@ textarea.input {
   border-bottom: 1px solid color-mix(in srgb, var(--chrome) 25%, transparent);
 }
 
-.settings-row-name {
+.settings-row-text {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 6px 0;
+}
+
+.settings-row-name {
   font-family: var(--font-data);
   font-weight: 600;
   font-size: 16px;
@@ -1403,13 +1426,38 @@ textarea.input {
   white-space: nowrap;
 }
 
+.settings-row-note {
+  font-size: 13px;
+  color: var(--chrome-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.settings-row.is-editing {
+  display: block;
+  padding: var(--s-2) 0;
+}
+
+.settings-edit {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-2);
+}
+
+.settings-edit-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s-2);
+}
+
 .settings-add {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--s-2);
 }
 
 .settings-add .input {
-  flex: 1;
+  flex: 1 1 180px;
   min-width: 0;
 }
 

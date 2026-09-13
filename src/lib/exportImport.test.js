@@ -9,14 +9,18 @@ describe('parseImport', () => {
     const out = parseImport(JSON.stringify({ format: 'atcfps', version: 1, kind: 'board', board }))
     expect(out.boards).toHaveLength(1)
     expect(out.boards[0].bays.x.stripOrder).toEqual(['s'])
-    expect(out.vehicles).toEqual([])
+    expect(out.presets).toEqual({ vehicle: [], info: [] })
   })
   it('accepts an all-boards export', () => {
     const out = parseImport(
       JSON.stringify({ format: 'atcfps', version: 1, kind: 'boards', boards: [board, board], settings: { vehicles: ['Fire 1', ' fire 1'] } }),
     )
     expect(out.boards).toHaveLength(2)
-    expect(out.vehicles).toEqual(['Fire 1'])
+    expect(out.presets.vehicle).toEqual([{ label: 'Fire 1', notes: '' }]) // legacy shape
+    const out2 = parseImport(
+      JSON.stringify({ format: 'atcfps', version: 1, kind: 'boards', boards: [board], settings: { presets: { info: [{ label: 'Wind', notes: 'n' }] } } }),
+    )
+    expect(out2.presets).toEqual({ vehicle: [], info: [{ label: 'Wind', notes: 'n' }] })
   })
   it('accepts a bare board object', () => {
     expect(parseImport(JSON.stringify(board)).boards).toHaveLength(1)
